@@ -1,6 +1,7 @@
 module LikhaGameHeuristics (
     gameStateHeuristic,
-    giftHeuristic
+    giftHeuristic,
+    handHeuristic
 ) where
 
 import GHC.Float (int2Float)
@@ -30,21 +31,22 @@ giftHeuristic cs gift = handHeuristic [] $ cs \\ gift
 handHeuristic :: [Table] -> [Card]  -> Int
 handHeuristic history cs = basicCost + likhaSuitCost (Card Spades Queen) + likhaSuitCost (Card Diamonds Ten)
   where basicCost = sum $ map (\(Card s n) -> suitCost s * numberToInt n) cs
-        likhaSuitCost likha = if not $ likhaPlayed likha then likhaCost likha * (\(under, above) -> max 0 above - under) (cardsUnderAboveLikha likha) else 0
+        
+        likhaSuitCost likha = if not $ likhaPlayed likha then likhaCost likha * cardsRelativeCost likha else 0
 
-        cardsUnderAboveLikha :: Card -> (Int, Int)
-        cardsUnderAboveLikha likha = (under, above)
+        cardsRelativeCost :: Card -> Int
+        cardsRelativeCost likha = max 0 (above - under) -- if above < under then 1 else 0
           where inSuit = filter ((==) (suit likha) . suit) cs
-                under = length $ filter ((<) (number likha) . number) inSuit
-                above = length $ filter ((>=) (number likha) . number) inSuit
+                under = length $ filter ((>) (number likha) . number) inSuit -- counter intuitive use of >, but it will take the first argument to the left
+                above = length $ filter ((<=) (number likha) . number) inSuit
 
         suitCost :: Num a => Suit -> a
-        suitCost Hearts = 5
+        suitCost Hearts = 13
         suitCost _      = 1
 
         likhaCost :: Num a => Card -> a
-        likhaCost (Card Spades Queen) = 13 * 5
-        likhaCost (Card Diamonds Ten) = 10 * 5
+        likhaCost (Card Spades Queen) = 13 * 13
+        likhaCost (Card Diamonds Ten) = 10 * 13
         likhaCost _                   = 0
 
         likhaPlayed likha = any (\(Table _ tcs) -> likha `elem` tcs) history

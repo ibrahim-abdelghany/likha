@@ -63,7 +63,9 @@ test-suite likha-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
-      CardConstraintsTest
+      LikhaGameHeuristicsSpec
+      LikhaGameSpec
+      ListUtilsSpec
       Paths_likha
   hs-source-dirs:
       test

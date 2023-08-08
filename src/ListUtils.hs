@@ -9,4 +9,5 @@ pick _ [] = []
 pick n (x:xs) = [x:ps | ps <- pick (n-1) xs] ++ pick n xs
 
 rotate :: [a] -> [a]
+rotate [] = []
 rotate xs = tail xs ++ [head xs]
