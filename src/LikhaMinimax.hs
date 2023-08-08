@@ -7,7 +7,7 @@ import Data.Random ( RVar )
 import Data.List ((\\), sortOn)
 import Control.Monad (replicateM)
 
-import ListUtils (outerProduct, rotate)
+import ListUtils (rotate)
 import Tree (iterateTree, sortChildrenOn, pruneWidth, pruneDepth)
 
 import Cards (Card(..))
@@ -37,7 +37,7 @@ gameScore playerScores = player0s - player1s
 nextGameStates :: FullGameState -> [FullGameState]
 nextGameStates (FullPreGift p playerStates) = map generateGameState giftChoices
     where giftChoicesPerPlayer = [take 3 $ sortOn (giftHeuristic $ hand ps) $ gifts $ hand ps | ps <- sortOn player playerStates]
-          giftChoices = foldl outerProduct [[]] giftChoicesPerPlayer
+          giftChoices = sequence giftChoicesPerPlayer
           generateGameState gs = FullPostGift (distributeGifts gs) [Table p []]
           distributeGifts gs = [PlayerState (player ps) ((hand ps \\ giftGiven) ++ giftTaken ) 0 | ((giftGiven, giftTaken), ps) <- zip (zip gs (rotate gs)) $ sortOn player playerStates]
 

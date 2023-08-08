@@ -10,6 +10,7 @@ module Tree (
 import Data.List (sortOn)
 
 data Tree a = Node a [Tree a]
+    deriving (Show, Eq)
 
 instance Functor Tree where
     fmap :: (a -> b) -> Tree a -> Tree b

@@ -25,6 +25,7 @@ data ObservedGameState = PreGift [Card] Player | PostGift [Card] [Card] [Table]
 data FullGameState = FullPreGift Player [PlayerState] | FullPostGift [PlayerState] [Table]
     deriving Show
 
+-- TODO rename
 currentPlayer :: FullGameState -> Player
 currentPlayer (FullPreGift p _) = p
 currentPlayer (FullPostGift _ history) = nextPlayer $ head history
