@@ -42,7 +42,7 @@ spec = do
                 Card Spades Seven, 
                 Card Clubs Jack
             ]) `shouldBe` 10
-        it "returns sum of scores for each Queen of Spades" $
+        it "returns sum of scores for each likha and hearts" $
             tableScore (Table Player1 [
                 Card Spades Queen, 
                 Card Diamonds Ten, 
