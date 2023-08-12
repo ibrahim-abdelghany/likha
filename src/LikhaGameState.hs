@@ -2,7 +2,7 @@ module LikhaGameState (
     PlayerState(..),
     ObservedGameState(..),
     FullGameState(..),
-    sampleGameState,
+    generateFullGameState,
     currentPlayer
 ) where
 
@@ -30,8 +30,8 @@ currentPlayer :: FullGameState -> Player
 currentPlayer (FullPreGift p _) = p
 currentPlayer (FullPostGift _ history) = nextPlayer $ head history
 
-sampleGameState :: ObservedGameState -> RVar FullGameState
-sampleGameState (PreGift p0cs p) = do
+generateFullGameState :: ObservedGameState -> RVar FullGameState
+generateFullGameState (PreGift p0cs p) = do
     shuffledCards <- shuffle $ deck \\ p0cs
     let player1Cards = take 13 shuffledCards
     let player2Cards = take 13 $ drop 13 shuffledCards
@@ -44,7 +44,7 @@ sampleGameState (PreGift p0cs p) = do
         PlayerState Player3 player3Cards 0
       ]
 
-sampleGameState (PostGift p0cs p1cs history) = do
+generateFullGameState (PostGift p0cs p1cs history) = do
   shuffledRemainingCardsP1 <- shuffle $ playerDomain Player1 freeCards
   let player1Cards = take nPlayer1Cards shuffledRemainingCardsP1 ++ p1csLeft
   

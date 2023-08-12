@@ -1,5 +1,4 @@
 {-# LANGUAGE InstanceSigs #-}
-{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 module LikhaGameHeuristicsSpec (spec) where
 
 import Test.Hspec ( describe, it, Spec, shouldSatisfy )
@@ -16,7 +15,6 @@ import ListUtils (rotate)
 import Data.List (sortOn, (\\))
 
 import Control.Monad.Extra(iterateM)
-import Debug.Trace (traceShowM)
 
 spec :: Spec
 spec = do
@@ -118,7 +116,7 @@ instance Arbitrary ArbitraryPostGiftState where
 
     let emptyHistory = [Table starting []]
 
-    rounds <- choose (0, 12)
+    rounds <- choose (0, 4 * 13 - 1)
 
     randomTables <- iterateM randomTable (startingStates, emptyHistory)
 
@@ -127,30 +125,27 @@ instance Arbitrary ArbitraryPostGiftState where
     return $ ArbitraryPostGiftState states history
 
 randomTable :: ([PlayerState], [Table]) -> Gen ([PlayerState], [Table])
-randomTable (playerStates, (Table starting []):history) = do
+randomTable (_, []) = error "history should be nonempty"
+randomTable (playerStates, (Table starting cs):history) = do
     let sortedPlayers = iterate rotate (sortOn player playerStates) !! fromEnum starting
-    traceShowM sortedPlayers
 
-    let turn0 = head sortedPlayers
-    turn0Card <- oneof $ map return $ hand turn0
+    let turn = sortedPlayers !! length cs
 
-    let turn1 = sortedPlayers !! 1
-    turn1Card <- oneof $ map return $ moves (suit turn0Card) $ hand turn1
+    let choices = if null cs then hand turn else moves (suit (head cs)) $ hand turn
 
-    let turn2 = sortedPlayers !! 2
-    turn2Card <- oneof $ map return $ moves (suit turn0Card) $ hand turn2
+    turnCard <- oneof $ map return choices
 
-    let turn3 = sortedPlayers !! 3
-    turn3Card <- oneof $ map return $ moves (suit turn0Card) $ hand turn3
-
-    let newtable = Table starting [turn0Card, turn1Card, turn2Card, turn3Card]
+    let newtable = Table starting (cs ++ [turnCard])
 
     let winner = collect newtable
-    let scoreT p = if p == winner then tableScore newtable else 0
+    let scoreT = tableScore newtable
+    let final = length (cards newtable) == 4
 
-    return ([
-            PlayerState (player turn0) (hand turn0 \\ [turn0Card]) (score turn0 + scoreT (player turn0)),
-            PlayerState (player turn1) (hand turn1 \\ [turn1Card]) (score turn1 + scoreT (player turn1)),
-            PlayerState (player turn2) (hand turn2 \\ [turn2Card]) (score turn2 + scoreT (player turn2)),
-            PlayerState (player turn3) (hand turn3 \\ [turn3Card]) (score turn3 + scoreT (player turn3))
-        ], Table winner []:newtable:history)
+    let newHistory = if final then Table winner []:newtable:history else newtable:history
+
+    let newStates = [PlayerState
+            (player ps) 
+            (if player ps == player turn then hand ps \\ [turnCard] else hand ps) 
+            (score ps + if final && player ps == winner then scoreT else 0) | ps <- playerStates]
+
+    return (newStates, newHistory)

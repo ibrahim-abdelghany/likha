@@ -3,6 +3,7 @@
 module LikhaGame
 (
     Player(..),
+    players,
     next,
     Table(..),
     nextPlayer,
@@ -19,6 +20,9 @@ import ListUtils ( pick )
 
 data Player = Player0 | Player1 | Player2 | Player3
     deriving (Eq, Enum, Ord, Show)
+
+players :: [Player]
+players = [Player0, Player1, Player2, Player3]
 
 next :: Player -> Player
 next Player0 = Player1

@@ -44,6 +44,7 @@ packages:
 #   - array-0.3.0.3@sha256:d019b5339b111862b18bf1dc19e9f59a32b16b6bad3c0f5e2c5cac91ba3d3b70,1383
 #   - containers-0.3.0.0@sha256:fa5319118753343c37618ba4ae6fc1a119d62c43aeafe00078ab972aac3d6039,1148
 #   - random-fu-0.1.4@sha256:04667b2a1498a7db77ab4ca3d0909f1321e7e8fad9190229383b0cacd2d520a1,6079
+#   - random-fu-0.2.7.7@sha256:02ed19a5317b7f12a57af7809f1adc668fb47fdbe2ece497c8f8f9985df5d09a,4739
 #   - deepseq-1.5.0.0
 #   - base-4.4.1.0
 #   - mtl-2.3.1

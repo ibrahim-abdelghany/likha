@@ -18,8 +18,8 @@ gameStateHeuristic (FullPreGift _ playerStates) = map (\(p,w) -> (p, 36 * w / to
     where playerWeights = [(player ps, int2Float $ handHeuristic [] $ hand ps) | ps <- playerStates]
           totalWeight = sum $ map snd playerWeights
 gameStateHeuristic (FullPostGift playerStates history)
-  | remainingScore == 0 || totalWeight == 0 = map (\(PlayerState p _ s) -> (p, int2Float s)) playerStates
-  | otherwise = map (\(p, weight, currentScore) -> (p,  currentScore +  remainingScore * weight / totalWeight)) playerCardWeightsScores
+  | totalWeight == 0    = map (\(PlayerState p _ s) -> (p, int2Float s)) playerStates
+  | otherwise           = map (\(p, weight, currentScore) -> (p,  currentScore +  remainingScore * weight / totalWeight)) playerCardWeightsScores
     where playerCardWeightsScores = map (triapply player (int2Float . handWeight) (int2Float . expectedScore)) playerStates
 
           handWeight :: PlayerState -> Int

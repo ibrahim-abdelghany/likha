@@ -42,7 +42,10 @@ library
     , base >=4.7 && <5
     , hspec
     , monad-extras
+    , mtl
+    , random
     , random-fu
+    , rvar
   default-language: Haskell2010
 
 executable likha-exe
@@ -58,7 +61,10 @@ executable likha-exe
     , hspec
     , likha
     , monad-extras
+    , mtl
+    , random
     , random-fu
+    , rvar
   default-language: Haskell2010
 
 test-suite likha-test
@@ -67,6 +73,7 @@ test-suite likha-test
   other-modules:
       LikhaGameHeuristicsSpec
       LikhaGameSpec
+      LikhaGameStateSpec
       ListUtilsSpec
       Paths_likha
   hs-source-dirs:
@@ -78,5 +85,8 @@ test-suite likha-test
     , hspec
     , likha
     , monad-extras
+    , mtl
+    , random
     , random-fu
+    , rvar
   default-language: Haskell2010

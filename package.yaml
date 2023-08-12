@@ -23,8 +23,11 @@ dependencies:
 - base >= 4.7 && < 5
 - hspec
 - QuickCheck
+- random
 - random-fu
-- monad-extras 
+- rvar
+- mtl
+- monad-extras
 
 ghc-options:
 - -Wall

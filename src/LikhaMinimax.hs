@@ -12,12 +12,12 @@ import Tree (iterateTree, sortChildrenOn, pruneWidth, pruneDepth)
 
 import Cards (Card(..), suit)
 import LikhaGame (Table(..), nextPlayer, collect, moves, gifts, tableScore, Player)
-import LikhaGameState (PlayerState(..), ObservedGameState, FullGameState (..), sampleGameState, currentPlayer)
+import LikhaGameState (PlayerState(..), ObservedGameState, FullGameState (..), generateFullGameState, currentPlayer)
 import LikhaGameHeuristics (giftHeuristic, gameStateHeuristic)
 
 minimax :: ObservedGameState -> RVar [Card]
 minimax observedGameState = do
-  sampledGameStates <- replicateM 100 $ sampleGameState observedGameState
+  sampledGameStates <- replicateM 100 $ generateFullGameState observedGameState
   let sampledGameTrees = map pureMinimax sampledGameStates
   return []
 
