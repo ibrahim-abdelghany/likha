@@ -23,9 +23,8 @@ dependencies:
 - base >= 4.7 && < 5
 - hspec
 - QuickCheck
-- random-fu # >=0.2 && <0.3
-# - random-source # >=0.3 && <0.4
-# - random-extras # couldn't be cleanly installed
+- random-fu
+- monad-extras 
 
 ghc-options:
 - -Wall

@@ -6,7 +6,9 @@ module Cards
     numbers,
     numberToInt,
     Card(..),
-    deck
+    deck,
+    suit,
+    number
 ) where
 
 data Suit = Hearts | Clubs | Spades | Diamonds
@@ -24,8 +26,14 @@ numbers = [Two .. Ace]
 numberToInt :: Number -> Int
 numberToInt n = 1 + fromEnum n
 
-data Card = Card {suit :: Suit, number :: Number}
+data Card = Card Suit Number
     deriving (Show, Eq)
+
+suit :: Card -> Suit
+suit (Card s _) = s
+
+number :: Card -> Number
+number (Card _ n) = n
 
 deck :: [Card]
 deck = [Card s n | s <- suits, n <- numbers]

@@ -10,7 +10,7 @@ import Control.Monad (replicateM)
 import ListUtils (rotate)
 import Tree (iterateTree, sortChildrenOn, pruneWidth, pruneDepth)
 
-import Cards (Card(..))
+import Cards (Card(..), suit)
 import LikhaGame (Table(..), nextPlayer, collect, moves, gifts, tableScore, Player)
 import LikhaGameState (PlayerState(..), ObservedGameState, FullGameState (..), sampleGameState, currentPlayer)
 import LikhaGameHeuristics (giftHeuristic, gameStateHeuristic)

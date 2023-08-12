@@ -13,10 +13,10 @@ import Data.Random.List (shuffle)
 
 import Data.Maybe (mapMaybe)
 
-import Cards (Card(..), deck)
+import Cards (Card(..), deck, suit)
 import LikhaGame ( Player(..), next, Table(..), collect, tableScore, nextPlayer)
 
-data PlayerState = PlayerState {player :: Player, hand :: [Card], score ::Int}
+data PlayerState = PlayerState {player :: Player, hand :: [Card], score :: Int}
     deriving Show
 
 data ObservedGameState = PreGift [Card] Player | PostGift [Card] [Card] [Table]

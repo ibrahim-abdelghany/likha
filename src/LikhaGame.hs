@@ -12,7 +12,7 @@ module LikhaGame
     gifts
 ) where
 
-import Cards (Card(..), Suit (..), Number (..))
+import Cards (Card(..), Suit (..), Number (..), suit, number)
 import Data.Foldable (maximumBy)
 import Data.Ord (comparing)
 import ListUtils ( pick )

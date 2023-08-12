@@ -7,7 +7,7 @@ module LikhaGameHeuristics (
 import GHC.Float (int2Float)
 import Data.List ( (\\) )
 
-import Cards (Card(..), Suit (..), Number (..), numberToInt)
+import Cards (Card(..), Suit (..), Number (..), numberToInt, suit, number)
 import LikhaGame ( Player(..), Table(..), collect, tableScore)
 import LikhaGameState (PlayerState(..), FullGameState (..))
 
@@ -17,8 +17,9 @@ gameStateHeuristic :: FullGameState -> [(Player, Float)]
 gameStateHeuristic (FullPreGift _ playerStates) = map (\(p,w) -> (p, 36 * w / totalWeight)) playerWeights
     where playerWeights = [(player ps, int2Float $ handHeuristic [] $ hand ps) | ps <- playerStates]
           totalWeight = sum $ map snd playerWeights
-gameStateHeuristic (FullPostGift playerStates history) =
-  map (\(p, weight, currentScore) -> (p,  currentScore +  remainingScore * weight / totalWeight)) playerCardWeightsScores
+gameStateHeuristic (FullPostGift playerStates history)
+  | remainingScore == 0 || totalWeight == 0 = map (\(PlayerState p _ s) -> (p, int2Float s)) playerStates
+  | otherwise = map (\(p, weight, currentScore) -> (p,  currentScore +  remainingScore * weight / totalWeight)) playerCardWeightsScores
     where playerCardWeightsScores = map (triapply player (int2Float . handWeight) (int2Float . expectedScore)) playerStates
 
           handWeight :: PlayerState -> Int
