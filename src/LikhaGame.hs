@@ -33,6 +33,7 @@ nextPlayer :: Table -> Player
 nextPlayer table = iterate next (startingPlayer table) !! length (cards table)
 
 collect :: Table -> Player
+collect (Table start []) = start
 collect (Table start cs) = fst
                             $ maximumBy (comparing (number . snd))
                             $ filter ((==) tableSuit . suit . snd)
