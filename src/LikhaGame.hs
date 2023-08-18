@@ -31,7 +31,7 @@ next Player2 = Player3
 next Player3 = Player0
 
 data Table = Table {startingPlayer:: Player, cards :: [Card]}
-    deriving Show
+    deriving (Show, Eq)
 
 nextPlayer :: Table -> Player
 nextPlayer table = iterate next (startingPlayer table) !! length (cards table)

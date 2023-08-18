@@ -12,7 +12,7 @@ import Tree (iterateTree, sortChildrenOn, pruneWidth, pruneDepth)
 
 import Cards (Card(..), suit)
 import LikhaGame (Table(..), nextPlayer, collect, moves, gifts, tableScore, Player)
-import LikhaGameState (PlayerState(..), ObservedGameState, FullGameState (..), generateFullGameState, currentPlayer)
+import LikhaGameState (PlayerState(..), ObservedGameState, FullGameState (..), generateFullGameState, turn)
 import LikhaGameHeuristics (giftHeuristic, gameStateHeuristic)
 
 minimax :: ObservedGameState -> RVar [Card]
@@ -25,7 +25,7 @@ pureMinimax :: FullGameState -> [Card]
 pureMinimax fullGameState = []
   where gameTree = pruneDepth 5 $ pruneWidth 5 $ sortChildrenOn minOrMax (augmentScore <$> iterateTree nextGameStates fullGameState)
         augmentScore gs = (gs, gameScore $ gameStateHeuristic gs)
-        minOrMax (gs, s) = if even (fromEnum $ currentPlayer gs) then s else -s
+        minOrMax (gs, s) = if even (fromEnum $ turn gs) then s else -s
 
 gameScore :: [(Player, Float)] -> Float
 gameScore playerScores = player0s - player1s
