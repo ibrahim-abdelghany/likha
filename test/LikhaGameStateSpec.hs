@@ -62,7 +62,10 @@ spec = do
                 let fullGameState = evalState (sampleStateRVar (generateFullGameState (PostGift p0cs p1cs history))) src
                 assert $ case fullGameState of
                     FullPreGift _ _ -> False
-                    FullPostGift pss _ -> all (`playerStateDoesntHaveIllegalSuits` history) pss
+                    FullPostGift pss _ -> playerStatesLegal pss history
+
+playerStatesLegal :: [PlayerState] -> [Table] -> Bool
+playerStatesLegal pss history = all (`playerStateDoesntHaveIllegalSuits` history) pss
 
 playerStateDoesntHaveIllegalSuits :: PlayerState -> [Table] -> Bool
 playerStateDoesntHaveIllegalSuits (PlayerState p cs _) history = all ((`notElem` missing) . suit) cs
