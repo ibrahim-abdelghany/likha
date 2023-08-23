@@ -31,6 +31,7 @@ library
       LikhaGameState
       LikhaMinimax
       ListUtils
+      MatrixTree
       Tree
   other-modules:
       Paths_likha
@@ -76,6 +77,7 @@ test-suite likha-test
       LikhaGameSpec
       LikhaGameStateSpec
       ListUtilsSpec
+      MatrixTreeSpec
       Paths_likha
   hs-source-dirs:
       test
