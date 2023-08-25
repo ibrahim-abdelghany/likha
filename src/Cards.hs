@@ -12,7 +12,7 @@ module Cards
 ) where
 
 data Suit = Hearts | Clubs | Spades | Diamonds
-    deriving (Show, Eq, Enum)
+    deriving (Show, Eq, Enum, Ord)
 
 suits :: [Suit]
 suits = [Hearts .. Diamonds]
@@ -27,7 +27,7 @@ numberToInt :: Number -> Int
 numberToInt n = 1 + fromEnum n
 
 data Card = Card Suit Number
-    deriving (Show, Eq)
+    deriving (Show, Eq, Ord)
 
 suit :: Card -> Suit
 suit (Card s _) = s

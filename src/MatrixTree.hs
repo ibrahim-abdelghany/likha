@@ -3,6 +3,7 @@ module MatrixTree
 (
   MatrixTree(..),
   value,
+  offspring,
   iterateMatrixTree,
   mapMatrix,
   prune,
@@ -19,6 +20,10 @@ data MatrixTree a = TreeNode a [MatrixTree a] | MatrixNode a [[[[MatrixTree a]]]
 value :: MatrixTree a -> a
 value (TreeNode x _) = x
 value (MatrixNode x _) = x
+
+offspring :: MatrixTree a -> [MatrixTree a]
+offspring (TreeNode _ children) = children
+offspring (MatrixNode _ cells) = concatMap (concatMap concat) cells
 
 instance Functor MatrixTree where
     fmap :: (a -> b) -> MatrixTree a -> MatrixTree b

@@ -4,6 +4,7 @@ module LikhaGameState (
     FullGameState(..),
     generateFullGameState,
     turn,
+    hands,
     missingSuits
 ) where
 
@@ -32,6 +33,10 @@ data FullGameState = FullPreGift Player [PlayerState] | FullPostGift [PlayerStat
 turn :: FullGameState -> Player
 turn (FullPreGift p _) = p
 turn (FullPostGift _ history) = nextPlayer $ head history
+
+hands :: FullGameState -> [PlayerState]
+hands (FullPreGift _ pss) = pss
+hands (FullPostGift pss _) = pss
 
 generateFullGameState :: ObservedGameState -> RVar FullGameState
 generateFullGameState (PreGift p0cs p) = do

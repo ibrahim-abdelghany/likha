@@ -32,7 +32,6 @@ library
       LikhaMinimax
       ListUtils
       MatrixTree
-      Tree
   other-modules:
       Paths_likha
   hs-source-dirs:
