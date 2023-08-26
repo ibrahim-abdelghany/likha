@@ -51,7 +51,7 @@ spec = do
             ]) `shouldBe` 24
     describe "moves" $ do
         it "returns cards from the same suit" $
-            moves Spades [
+            moves [Table Player0 [Card Spades Ace]] [
                 Card Spades Three, 
                 Card Hearts Ace, 
                 Card Spades Seven, 
@@ -61,7 +61,7 @@ spec = do
                 Card Spades Seven
             ]
         it "returns all cards if no cards from the same suit exist" $
-            moves Diamonds [
+            moves [Table Player0 [Card Diamonds Ace]] [
                 Card Spades Three, 
                 Card Hearts Ace, 
                 Card Spades Seven, 

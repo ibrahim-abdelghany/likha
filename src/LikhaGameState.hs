@@ -14,7 +14,7 @@ import Data.Random.List (shuffle)
 import Data.Maybe (mapMaybe, fromJust, isJust)
 
 import Cards (Card(..), deck, suit, Suit)
-import LikhaGame ( Player(..), next, Table(..), collect, tableScore, nextPlayer)
+import LikhaGame ( Player(..), next, Table(..), History, collect, tableScore, nextPlayer)
 import Data.Foldable (find)
 import Data.List ((\\), minimumBy)
 import Data.Ord (comparing)
@@ -24,10 +24,10 @@ import Control.Monad.Extra (iterateMaybeM)
 data PlayerState = PlayerState {player :: Player, hand :: [Card], score :: Int}
     deriving Show
 
-data ObservedGameState = PreGift [Card] Player | PostGift [Card] [Card] [Table]
+data ObservedGameState = PreGift [Card] Player | PostGift [Card] [Card] History
     deriving Show
 
-data FullGameState = FullPreGift Player [PlayerState] | FullPostGift [PlayerState] [Table]
+data FullGameState = FullPreGift Player [PlayerState] | FullPostGift [PlayerState] History
     deriving Show
 
 turn :: FullGameState -> Player
@@ -117,7 +117,7 @@ pickCardForMostConstrainedPlayer domains = do
         let otherPlayersUpdatedDomains = map (\(p', hnum', phnd', dom') -> (p', hnum', phnd', dom' \\ [card])) otherPlayerDomains
         return $ Just $ (p, hnum, card:phand, dom \\ [card]) : otherPlayersUpdatedDomains
 
-missingSuits :: Player -> [Table] -> [Suit]
+missingSuits :: Player -> History -> [Suit]
 missingSuits p = mapMaybe (missingFromTable p)
 
 missingFromTable :: Player -> Table -> Maybe Suit

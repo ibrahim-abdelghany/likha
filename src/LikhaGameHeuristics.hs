@@ -8,7 +8,7 @@ import GHC.Float (int2Float)
 import Data.List ( (\\) )
 
 import Cards (Card(..), Suit (..), Number (..), numberToInt, suit, number)
-import LikhaGame ( Player(..), Table(..), collect, tableScore)
+import LikhaGame ( Player(..), Table(..), History, collect, tableScore)
 import LikhaGameState (PlayerState(..), FullGameState (..))
 
 -- basic algorithm to compute heuristic score of a hand of cards
@@ -38,7 +38,7 @@ gameStateHeuristic (FullPostGift playerStates history)
 giftHeuristic :: [Card] -> [Card] -> Int
 giftHeuristic cs gift = handHeuristic [] $ cs \\ gift
 
-handHeuristic :: [Table] -> [Card]  -> Int
+handHeuristic :: History -> [Card]  -> Int
 handHeuristic history cs = basicCost + likhaSuitCost (Card Spades Queen) + likhaSuitCost (Card Diamonds Ten)
   where basicCost = sum $ map (\(Card s n) -> suitCost s * numberToInt n) cs
 

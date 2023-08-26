@@ -11,8 +11,8 @@ module ArbitraryGameState (
 import Test.QuickCheck (Arbitrary (arbitrary), Gen, shuffle, oneof)
 import Test.QuickCheck.Gen (choose)
 
-import LikhaGame( Player(..), players, next, Table(..), moves, tableScore, collect )
-import Cards (Card, deck, suit)
+import LikhaGame( Player(..), players, next, Table(..), tableScore, collect, moves )
+import Cards (Card, deck)
 import LikhaGameState(PlayerState(..), FullGameState (..))
 
 import ListUtils (rotate)
@@ -118,7 +118,7 @@ randomTable (playerStates, (Table starting cs):history) = do
 
     let turn = sortedPlayers !! length cs
 
-    let choices = if null cs then hand turn else moves (suit (head cs)) $ hand turn
+    let choices = moves (Table starting cs:history) $ hand turn
 
     turnCard <- oneof $ map return choices
 

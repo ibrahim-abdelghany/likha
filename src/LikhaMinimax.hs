@@ -12,7 +12,7 @@ import Control.Monad (replicateM)
 
 import ListUtils (rotate)
 
-import Cards (Card(..), suit)
+import Cards (Card(..))
 import LikhaGame (Player, Table(..), nextPlayer, collect, moves, gifts, tableScore)
 import LikhaGameState (PlayerState(..), ObservedGameState, FullGameState (..), generateFullGameState, turn, hands)
 import LikhaGameHeuristics (giftHeuristic, gameStateHeuristic)
@@ -71,7 +71,8 @@ nextStates (FullPreGift p playerStates) = Right [[[[
         | gifts0 <- head giftChoicesPerPlayer]
     where giftChoicesPerPlayer = [sortOn (giftHeuristic $ hand ps) $ gifts $ hand ps | ps <- sortOn player playerStates]
           generateGameState gs = FullPostGift (distributeGifts gs) [Table p []]
-          distributeGifts gs = [PlayerState (player ps) ((hand ps \\ giftGiven) ++ giftTaken ) 0 | ((giftGiven, giftTaken), ps) <- zip (zip gs (rotate gs)) $ sortOn player playerStates]
+          distributeGifts gs = [PlayerState (player ps) ((hand ps \\ giftGiven) ++ giftTaken) 0 | ((giftGiven, giftTaken), ps) <- zip (zip gs (rotate gs)) $ sortOn player playerStates]
+
 nextStates (FullPostGift playerStates history) = Left $ 
         sortOn (playerCost tablePlayer . gameScore . gameStateHeuristic)
         [FullPostGift (updateScore (updateHistory c) $ popCard c playerStates) (updateHistory c) | c <- choices]
@@ -93,10 +94,15 @@ nextStates (FullPostGift playerStates history) = Left $
 
           collector updatedTable = if isLast then Just $ collect updatedTable else Nothing
 
-          choices
-            | null (cards $ head history) = playerCards
-            | otherwise = moves (suit $ head $ cards $ head history) playerCards
+          choices = moves history playerCards
             where playerCards = hand $ head $ filter ((==) tablePlayer . player) playerStates
 
           tablePlayer = nextPlayer $ head history
 
+-- TODO consider refactoring above function
+
+-- postGiftLegalMoves :: [PlayerState] -> [Table] -> (Player, [Card])
+-- postGiftLegalMoves pss history
+--         | null $ cards $ head history = (collect $ history !! 1, playerHand $ collect $ history !! 1)
+--         | otherwise                   = (nextPlayer $ head history, moves (suit $ head $ cards $ head history) (playerHand $ nextPlayer $ head history))
+--     where playerHand p = hand $ head $ filter ((==) p . player) pss

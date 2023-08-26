@@ -9,7 +9,7 @@ import Data.List ((\\))
 
 import ArbitraryGameState (ArbitraryFullGameState(..), ArbitraryFullPostGiftState(..), ArbitraryFullPreGiftState (..))
 
-import Cards (Card, suit)
+import Cards (Card)
 import LikhaGame (Player, players, Table (..), moves)
 import LikhaMinimax (nextStates)
 import LikhaGameState (FullGameState(..), hands, PlayerState (..), turn)
@@ -57,7 +57,7 @@ legalOneCardMove parent child =
           lastCardInHistory (current:rest) = if null $ cards current then lastCardInHistory rest else last $ cards current
 
           legalSuitGivenHistory [] _ = error "history should not be empty"
-          legalSuitGivenHistory (current:_) card = null (cards current) || card `elem` moves (suit $ head $ cards current) parentTurnHand
+          legalSuitGivenHistory hist card = card `elem` moves hist parentTurnHand
 
           parentTurnHand = hand $ head $ filter ((==) (turn parent) . player) $ hands parent
 

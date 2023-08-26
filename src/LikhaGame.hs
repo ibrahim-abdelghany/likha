@@ -6,6 +6,7 @@ module LikhaGame
     players,
     next,
     Table(..),
+    History,
     nextPlayer,
     collect,
     tableScore,
@@ -30,6 +31,8 @@ next Player1 = Player2
 next Player2 = Player3
 next Player3 = Player0
 
+type History = [Table]
+
 data Table = Table {startingPlayer:: Player, cards :: [Card]}
     deriving (Show, Eq)
 
@@ -52,8 +55,11 @@ tableScore = sum . map \case
                     _ -> 0
                  . cards
 
-moves :: Suit -> [Card] -> [Card]
-moves s cs
+moves :: History -> [Card] -> [Card]
+moves history cs = if null $ cards $ head history then cs else legalMovesForSuit (suit $ head $ cards $ head history) cs
+ 
+legalMovesForSuit :: Suit -> [Card] -> [Card]
+legalMovesForSuit s cs
     | not $ null cardsInSuit = cardsInSuit
     | otherwise = cs
     where
