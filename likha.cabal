@@ -75,6 +75,7 @@ test-suite likha-test
       LikhaGameHeuristicsSpec
       LikhaGameSpec
       LikhaGameStateSpec
+      LikhaMinimaxSpec
       ListUtilsSpec
       MatrixTreeSpec
       Paths_likha

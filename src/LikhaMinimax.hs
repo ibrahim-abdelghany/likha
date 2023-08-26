@@ -1,6 +1,7 @@
 module LikhaMinimax
 (
-  monteCarloBestMove
+  monteCarloBestMove,
+  nextStates
 ) where
 
 import Data.Random ( RVar )
@@ -74,7 +75,7 @@ nextStates (FullPreGift p playerStates) = Right [[[[
 nextStates (FullPostGift playerStates history) = Left $ 
         sortOn (playerCost tablePlayer . gameScore . gameStateHeuristic)
         [FullPostGift (updateScore (updateHistory c) $ popCard c playerStates) (updateHistory c) | c <- choices]
-    where popCard c = map (\ps -> PlayerState (player ps) (filter (\_c -> tablePlayer /= player ps && c /= _c) $ hand ps) (score ps))
+    where popCard c = map (\ps -> PlayerState (player ps) (filter (\_c -> tablePlayer /= player ps || c /= _c) $ hand ps) (score ps))
 
           updateScore newHistory = map (\ps -> PlayerState (player ps) (hand ps) (score ps + if collector lastTable == Just (player ps) then currentScore lastTable else 0))
             where lastTable = newHistory !! if isLast then 1 else 0
@@ -98,3 +99,4 @@ nextStates (FullPostGift playerStates history) = Left $
             where playerCards = hand $ head $ filter ((==) tablePlayer . player) playerStates
 
           tablePlayer = nextPlayer $ head history
+

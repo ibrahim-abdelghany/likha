@@ -49,8 +49,8 @@ spec = do
                 gameStateHeuristic (FullPreGift Player0 [
                     PlayerState Player0 p0cs 0,
                     PlayerState Player1 p1cs 0,
-                    PlayerState Player1 p2cs 0,
-                    PlayerState Player1 p3cs 0
+                    PlayerState Player2 p2cs 0,
+                    PlayerState Player3 p3cs 0
                 ]) `shouldSatisfy` \h -> map snd h `proportional` map int2Float [
                     handHeuristic [] p0cs,
                     handHeuristic [] p1cs,
@@ -62,8 +62,8 @@ spec = do
                 gameStateHeuristic (FullPreGift Player0 [
                     PlayerState Player0 p0cs 0,
                     PlayerState Player1 p1cs 0,
-                    PlayerState Player1 p2cs 0,
-                    PlayerState Player1 p3cs 0
+                    PlayerState Player2 p2cs 0,
+                    PlayerState Player3 p3cs 0
                 ]) `shouldSatisfy` \h -> 36 ~== sum (map snd h)
         it "returns heuristics that add up to 36 for a PostGiftState" $ property $
             \(ArbitraryFullPostGiftState states history) ->

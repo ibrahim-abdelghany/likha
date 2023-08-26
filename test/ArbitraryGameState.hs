@@ -3,6 +3,8 @@ module ArbitraryGameState (
     ArbitraryObservedPreGiftState(..),
     ArbitraryObservedPostGiftState(..),
     ShuffledDeck(..),
+    ArbitraryFullGameState(..),
+    ArbitraryFullPreGiftState(..),
     ArbitraryFullPostGiftState(..),
 ) where
 
@@ -11,7 +13,7 @@ import Test.QuickCheck.Gen (choose)
 
 import LikhaGame( Player(..), players, next, Table(..), moves, tableScore, collect )
 import Cards (Card, deck, suit)
-import LikhaGameState(PlayerState(..))
+import LikhaGameState(PlayerState(..), FullGameState (..))
 
 import ListUtils (rotate)
 import Data.List (sortOn, (\\))
@@ -60,6 +62,32 @@ instance Arbitrary ArbitraryObservedPostGiftState where
 
 cardsFromHistory :: Player -> [Table] -> [Card]
 cardsFromHistory p = mapMaybe (\(Table start cs) -> snd <$> find ((==) p . fst) (zip (iterate next start) cs))
+
+data ArbitraryFullGameState = ArbitraryFullGameState FullGameState
+    deriving (Show)
+
+instance Arbitrary ArbitraryFullGameState where
+  arbitrary :: Gen ArbitraryFullGameState
+  arbitrary = do
+    (ArbitraryFullPreGiftState starting pssPre) <- arbitrary
+    (ArbitraryFullPostGiftState pssPost history) <- arbitrary
+    fgs <- oneof $ map return [FullPreGift starting pssPre, FullPostGift pssPost history]
+    return $ ArbitraryFullGameState fgs
+
+data ArbitraryFullPreGiftState = ArbitraryFullPreGiftState Player [PlayerState]
+    deriving (Show)
+
+instance Arbitrary ArbitraryFullPreGiftState where
+  arbitrary :: Gen ArbitraryFullPreGiftState
+  arbitrary = do
+    ShuffledDeck (p0cs, p1cs, p2cs, p3cs) <- arbitrary
+    starting <- oneof $ map return [Player0, Player1, Player2, Player3]
+    return $ ArbitraryFullPreGiftState starting [
+        PlayerState Player0 p0cs 0,
+        PlayerState Player1 p1cs 0,
+        PlayerState Player2 p2cs 0,
+        PlayerState Player3 p3cs 0
+      ]
 
 data ArbitraryFullPostGiftState = ArbitraryFullPostGiftState [PlayerState] [Table]
     deriving (Show)
