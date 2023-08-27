@@ -1,5 +1,6 @@
 module LikhaMinimax
 (
+  MinimaxParams(..),
   monteCarloBestMove,
   nextStates
 ) where
@@ -10,11 +11,9 @@ import Data.Foldable ( maximumBy )
 import Data.Ord (comparing)
 import Control.Monad (replicateM)
 
-import ListUtils (rotate)
-
 import Cards (Card(..))
-import LikhaGame (Player, Table(..), nextPlayer, collect, moves, gifts, tableScore)
-import LikhaGameState (PlayerState(..), ObservedGameState, FullGameState (..), generateFullGameState, turn, hands)
+import LikhaGame (Player (..))
+import LikhaGameState (PlayerState(..), ObservedGameState, FullGameState (..), generateRandomFullGameState, turn, hands, MoveOptions (..), moveOptions, playerState, applyMove, Move (Deal, Gift))
 import LikhaGameHeuristics (giftHeuristic, gameStateHeuristic)
 
 import MatrixTree (MatrixTree(..), value, offspring, Turn (..), iterateMatrixTree, prune, minimax)
@@ -30,17 +29,17 @@ data MinimaxParams = MinimaxParams {
 
 monteCarloBestMove :: MinimaxParams -> ObservedGameState -> RVar [Card]
 monteCarloBestMove params observedGameState = do
-    sampledGameStates <- replicateM (monteCarloSamples params) $ generateFullGameState observedGameState
+    sampledGameStates <- replicateM (monteCarloSamples params) $ generateRandomFullGameState observedGameState
     let bestMoves = map (minimaxBestMove params) sampledGameStates
     return $ head $ maximumBy (comparing length) $ group $ sort bestMoves
 
 minimaxBestMove :: MinimaxParams -> FullGameState -> [Card]
-minimaxBestMove params initialState = 
-        bestMove $ 
-        minimax (playerGoal . turn) gameStateHeuristic $ 
-        prune maxDepth (maxTreeWidth params) (maxMatrixDimensions params) $ 
+minimaxBestMove params initialState =
+        bestMove $
+        minimax (playerGoal . turn) gameStateHeuristic $
+        prune maxDepth (maxTreeWidth params) (maxMatrixDimensions params) $
         iterateMatrixTree nextStates initialState
-    where maxDepth = case initialState of 
+    where maxDepth = case initialState of
                         (FullPreGift _ _) -> maxTreeDepthPreGift params
                         (FullPostGift _ _) -> maxTreeDepthPostGift params
 
@@ -63,46 +62,13 @@ playerCost :: Player -> Float -> Float
 playerCost p s = if playerGoal p == Min then s else -s
 
 nextStates :: FullGameState -> Either [FullGameState] [[[[FullGameState]]]]
-nextStates (FullPreGift p playerStates) = Right [[[[
-        generateGameState [gifts0, gifts1, gifts2, gifts3]
-        | gifts3 <- giftChoicesPerPlayer !! 3]
-        | gifts2 <- giftChoicesPerPlayer !! 2]
-        | gifts1 <- giftChoicesPerPlayer !! 1]
-        | gifts0 <- head giftChoicesPerPlayer]
-    where giftChoicesPerPlayer = [sortOn (giftHeuristic $ hand ps) $ gifts $ hand ps | ps <- sortOn player playerStates]
-          generateGameState gs = FullPostGift (distributeGifts gs) [Table p []]
-          distributeGifts gs = [PlayerState (player ps) ((hand ps \\ giftGiven) ++ giftTaken) 0 | ((giftGiven, giftTaken), ps) <- zip (zip gs (rotate gs)) $ sortOn player playerStates]
-
-nextStates (FullPostGift playerStates history) = Left $ 
-        sortOn (playerCost tablePlayer . gameScore . gameStateHeuristic)
-        [FullPostGift (updateScore (updateHistory c) $ popCard c playerStates) (updateHistory c) | c <- choices]
-    where popCard c = map (\ps -> PlayerState (player ps) (filter (\_c -> tablePlayer /= player ps || c /= _c) $ hand ps) (score ps))
-
-          updateScore newHistory = map (\ps -> PlayerState (player ps) (hand ps) (score ps + if collector lastTable == Just (player ps) then currentScore lastTable else 0))
-            where lastTable = newHistory !! if isLast then 1 else 0
-
-          updateHistory c
-            | isLast = Table (collect newTable) [] : newTable : drop 1 history
-            | otherwise = newTable : drop 1 history
-            where newTable = (\(Table _p cs) -> Table _p (cs++[c])) (head history)
-
-          isLast = length (cards (head history)) == 3
-
-          currentScore updatedTable
-            | isLast = tableScore updatedTable
-            | otherwise = 0
-
-          collector updatedTable = if isLast then Just $ collect updatedTable else Nothing
-
-          choices = moves history playerCards
-            where playerCards = hand $ head $ filter ((==) tablePlayer . player) playerStates
-
-          tablePlayer = nextPlayer $ head history
-
--- TODO consider refactoring above function
-
--- postGiftLegalMoves :: [PlayerState] -> [Table] -> (Player, [Card])
--- postGiftLegalMoves pss history
---         | null $ cards $ head history = (collect $ history !! 1, playerHand $ collect $ history !! 1)
---         | otherwise                   = (nextPlayer $ head history, moves (suit $ head $ cards $ head history) (playerHand $ nextPlayer $ head history))
---     where playerHand p = hand $ head $ filter ((==) p . player) pss
+nextStates fgs = case moveOptions fgs of
+    GiftOptions giftOptions -> Right [[[[
+      applyMove (Gift [(Player0, g0), (Player1, g1), (Player2, g2), (Player3, g3)]) fgs
+          | g0 <- head sortedGiftOptions]
+          | g1 <- sortedGiftOptions !! 1]
+          | g2 <- sortedGiftOptions !! 2]
+          | g3 <- sortedGiftOptions !! 3]
+      where sortedGiftOptions = map snd $ sortOn fst $ map (uncurry sortGifts) giftOptions
+            sortGifts p gs = (p, sortOn (giftHeuristic (hand $ playerState p fgs)) gs)
+    DealOptions p cardOptions -> Left $ sortOn (playerCost p . gameScore . gameStateHeuristic) $ [applyMove (Deal p c) fgs | c <- cardOptions]

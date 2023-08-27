@@ -2,7 +2,12 @@ module LikhaGameState (
     PlayerState(..),
     ObservedGameState(..),
     FullGameState(..),
-    generateFullGameState,
+    Move(..),
+    MoveOptions(..),
+    playerState,
+    moveOptions,
+    applyMove,
+    generateRandomFullGameState,
     turn,
     hands,
     missingSuits
@@ -10,16 +15,17 @@ module LikhaGameState (
 
 import Data.Random ( RVar, randomElement )
 import Data.Random.List (shuffle)
-
 import Data.Maybe (mapMaybe, fromJust, isJust)
-
-import Cards (Card(..), deck, suit, Suit)
-import LikhaGame ( Player(..), next, Table(..), History, collect, tableScore, nextPlayer)
 import Data.Foldable (find)
-import Data.List ((\\), minimumBy)
+import Data.List ((\\), minimumBy, sortOn)
 import Data.Ord (comparing)
+
 import GHC.Float (int2Float)
 import Control.Monad.Extra (iterateMaybeM)
+
+import Cards (Card(..), deck, suit, Suit)
+import LikhaGame ( Player(..), next, Table(..), History, collect, tableScore, nextPlayer, gifts, moves)
+import ListUtils (rotate)
 
 data PlayerState = PlayerState {player :: Player, hand :: [Card], score :: Int}
     deriving Show
@@ -38,8 +44,55 @@ hands :: FullGameState -> [PlayerState]
 hands (FullPreGift _ pss) = pss
 hands (FullPostGift pss _) = pss
 
-generateFullGameState :: ObservedGameState -> RVar FullGameState
-generateFullGameState (PreGift p0cs p) = do
+playerState :: Player -> FullGameState -> PlayerState
+playerState p fgs = fromJust $ find ((==) p . player) $ hands fgs
+
+data Move = Deal Player Card | Gift [(Player, [Card])]
+    deriving (Show)
+
+data MoveOptions = DealOptions Player [Card] | GiftOptions [(Player, [[Card]])]
+    deriving (Show)
+
+moveOptions :: FullGameState -> MoveOptions
+moveOptions (FullPreGift _ pss) = GiftOptions [(player ps, gifts $ hand ps) | ps <- pss]
+moveOptions (FullPostGift pss history) = DealOptions p choices
+    where p = turn (FullPostGift pss history)
+          choices = moves history playerCards
+            where playerCards = hand $ head $ filter ((==) p . player) pss
+
+applyMove :: Move -> FullGameState -> FullGameState
+applyMove (Deal _ _) (FullPreGift _ _) = error "FullPreGift only accepts Gift moves"
+applyMove (Gift _) (FullPostGift _ _) = error "FullPostGift only accepts Deal moves"
+applyMove (Gift playerGifts) (FullPreGift starting pss) = FullPostGift distributedGifts [Table starting []]
+    where distributedGifts = [
+                PlayerState (player ps) ((hand ps \\ giftGiven) ++ giftTaken) 0 | ((giftGiven, giftTaken), ps) <- zip (zip sortedGifts (rotate sortedGifts)) sortedPSs
+            ]
+          sortedGifts = map snd $ sortOn fst playerGifts
+          sortedPSs = sortOn player pss
+
+applyMove (Deal p card) (FullPostGift pss history)
+        | p /= turn (FullPostGift pss history) = error "player out of turn"
+        | otherwise = FullPostGift (updateScore (updateHistory card) $ popCard card pss) (updateHistory card)
+    where popCard c = map (\ps -> PlayerState (player ps) (filter (\_c -> p /= player ps || c /= _c) $ hand ps) (score ps))
+
+          updateScore newHistory = map (\ps -> PlayerState (player ps) (hand ps) (score ps + if collector lastTable == Just (player ps) then currentScore lastTable else 0))
+            where lastTable = newHistory !! if isLast then 1 else 0
+
+          updateHistory c
+            | isLast = Table (collect newTable) [] : newTable : drop 1 history
+            | otherwise = newTable : drop 1 history
+            where newTable = (\(Table _p cs) -> Table _p (cs++[c])) (head history)
+
+          isLast = length (cards (head history)) == 3
+
+          currentScore updatedTable
+            | isLast = tableScore updatedTable
+            | otherwise = 0
+
+          collector updatedTable = if isLast then Just $ collect updatedTable else Nothing
+
+generateRandomFullGameState :: ObservedGameState -> RVar FullGameState
+generateRandomFullGameState (PreGift p0cs p) = do
     shuffledCards <- shuffle $ deck \\ p0cs
     let player1Cards = take 13 shuffledCards
     let player2Cards = take 13 $ drop 13 shuffledCards
@@ -52,7 +105,7 @@ generateFullGameState (PreGift p0cs p) = do
         PlayerState Player3 player3Cards 0
       ]
 
-generateFullGameState (PostGift p0cs p1cs history) = fmap fromJust $ repeatUntil isJust $ do
+generateRandomFullGameState (PostGift p0cs p1cs history) = fmap fromJust $ repeatUntil isJust $ do
     maybeFullplayerHands <- distributeFreeCards [
             (Player1, nPlayer1Cards, playerDomain Player1 freeCards),
             (Player2, nPlayer2Cards, playerDomain Player2 freeCards),

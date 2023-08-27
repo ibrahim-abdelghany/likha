@@ -5,7 +5,7 @@ import Test.QuickCheck (Testable(property))
 import Test.QuickCheck.Monadic (assert, monadicIO)
 
 import Cards (Card(..), deck, Suit(..), Number(..), suit)
-import LikhaGameState (generateFullGameState, ObservedGameState (PreGift, PostGift), FullGameState (..), PlayerState(..), missingSuits)
+import LikhaGameState (generateRandomFullGameState, ObservedGameState (PreGift, PostGift), FullGameState (..), PlayerState(..), missingSuits)
 import LikhaGame (Player (..), players, Table (..))
 
 import ArbitraryGameState(ArbitraryObservedPreGiftState(..), ArbitraryObservedPostGiftState(..))
@@ -27,39 +27,39 @@ spec = do
             missingSuits Player0 [Table Player1 [Card Clubs Ace, Card Clubs Two, Card Clubs Three, Card Hearts Seven]]
                 `shouldBe` [Clubs]
 
-    describe "sampleGameState" $ do
+    describe "generateRandomFullGameState" $ do
         it "samples pregift game state for observed hand" $ property $
             \(ArbitraryObservedPreGiftState starting p0cs) -> monadicIO $ do
                 src <- newStdGen
-                let fullGameState = evalState (sampleStateRVar (generateFullGameState (PreGift p0cs starting))) src
+                let fullGameState = evalState (sampleStateRVar (generateRandomFullGameState (PreGift p0cs starting))) src
                 assert $ case fullGameState of
                     FullPreGift p pss -> p == starting && playerStatesComplete pss && playerCardsPreserved Player0 p0cs pss
                     FullPostGift _ _ -> False
         it "preserves history for postgift game state" $ property $
             \(ArbitraryObservedPostGiftState p0cs p1cs history) -> monadicIO $ do
                 src <- newStdGen
-                let fullGameState = evalState (sampleStateRVar (generateFullGameState (PostGift p0cs p1cs history))) src
+                let fullGameState = evalState (sampleStateRVar (generateRandomFullGameState (PostGift p0cs p1cs history))) src
                 assert $ case fullGameState of
                     FullPreGift _ _ -> False
                     FullPostGift _ hist -> hist == history
         it "preserves Player0 cards for postgift game state" $ property $
             \(ArbitraryObservedPostGiftState p0cs p1cs history) -> monadicIO $ do
                 src <- newStdGen
-                let fullGameState = evalState (sampleStateRVar (generateFullGameState (PostGift p0cs p1cs history))) src
+                let fullGameState = evalState (sampleStateRVar (generateRandomFullGameState (PostGift p0cs p1cs history))) src
                 assert $ case fullGameState of
                     FullPreGift _ _ -> False
                     FullPostGift pss _ -> playerCardsPreserved Player0 p0cs pss
         it "generates complete cards for postgift state" $ property $
             \(ArbitraryObservedPostGiftState p0cs p1cs history) -> monadicIO $ do
                 src <- newStdGen
-                let fullGameState = evalState (sampleStateRVar (generateFullGameState (PostGift p0cs p1cs history))) src
+                let fullGameState = evalState (sampleStateRVar (generateRandomFullGameState (PostGift p0cs p1cs history))) src
                 assert $ case fullGameState of
                     FullPreGift _ _ -> False
                     FullPostGift pss hist -> playerStatesAndHistoryComplete pss hist
         it "does not generate cards for missing suit in postgift state" $ property $
             \(ArbitraryObservedPostGiftState p0cs p1cs history) -> monadicIO $ do
                 src <- newStdGen
-                let fullGameState = evalState (sampleStateRVar (generateFullGameState (PostGift p0cs p1cs history))) src
+                let fullGameState = evalState (sampleStateRVar (generateRandomFullGameState (PostGift p0cs p1cs history))) src
                 assert $ case fullGameState of
                     FullPreGift _ _ -> False
                     FullPostGift pss _ -> playerStatesLegal pss history
