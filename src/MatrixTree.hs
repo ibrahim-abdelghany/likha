@@ -39,7 +39,7 @@ iterateMatrixTree f root = case f root of
     Right cells -> MatrixNode root $ mapMatrix (iterateMatrixTree f) cells
 
 prune :: Int -> Int -> Int -> MatrixTree a -> MatrixTree a
-prune width depth dim = pruneWidth width . pruneDepth depth . pruneMatrix dim
+prune depth width dim = pruneWidth width . pruneDepth depth . pruneMatrix dim
 
 pruneWidth :: Int -> MatrixTree a -> MatrixTree a
 pruneWidth w (TreeNode x children) = TreeNode x (take w $ map (pruneWidth w) children)

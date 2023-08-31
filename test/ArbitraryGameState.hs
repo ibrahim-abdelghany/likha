@@ -6,6 +6,7 @@ module ArbitraryGameState (
     ArbitraryFullGameState(..),
     ArbitraryFullPreGiftState(..),
     ArbitraryFullPostGiftState(..),
+    ArbitraryStartFullPostGiftState(..)
 ) where
 
 import Test.QuickCheck (Arbitrary (arbitrary), Gen, shuffle, oneof)
@@ -89,27 +90,40 @@ instance Arbitrary ArbitraryFullPreGiftState where
         PlayerState Player3 p3cs 0
       ]
 
+
+data ArbitraryStartFullPostGiftState = ArbitraryStartFullPostGiftState FullGameState FullGameState
+    deriving (Show)
+
+instance Arbitrary ArbitraryStartFullPostGiftState where
+  arbitrary :: Gen ArbitraryStartFullPostGiftState
+  arbitrary = do
+    (ArbitraryFullPreGiftState starting startingStates) <- arbitrary
+
+    let emptyHistory = [Table starting []]
+
+    rounds <- choose (0, 4 * 13 - 2)
+
+    randomTables <- iterateM randomTable (startingStates, emptyHistory)
+
+    let tableSequence = (startingStates, emptyHistory):randomTables
+
+    let (states, history) = tableSequence !! rounds
+
+    let endState = if rounds == 0 then FullPreGift starting states else FullPostGift states history
+
+    return $ ArbitraryStartFullPostGiftState (FullPreGift starting startingStates) endState
+
 data ArbitraryFullPostGiftState = ArbitraryFullPostGiftState [PlayerState] [Table]
     deriving (Show)
 
 instance Arbitrary ArbitraryFullPostGiftState where
   arbitrary :: Gen ArbitraryFullPostGiftState
   arbitrary = do
-    ShuffledDeck (p0cs, p1cs, p2cs, p3cs) <- arbitrary
+    (ArbitraryStartFullPostGiftState _ endState) <- arbitrary
 
-    starting <- oneof $ map return players
-
-    let startingStates = [PlayerState Player0 p0cs 0, PlayerState Player1 p1cs 0, PlayerState Player2 p2cs 0, PlayerState Player3 p3cs 0]
-
-    let emptyHistory = [Table starting []]
-
-    rounds <- choose (0, 4 * 13 - 1)
-
-    randomTables <- iterateM randomTable (startingStates, emptyHistory)
-
-    let (states, history) = randomTables !! rounds
-
-    return $ ArbitraryFullPostGiftState states history
+    case endState of
+        FullPreGift p pss -> return $ ArbitraryFullPostGiftState pss [Table p []]
+        FullPostGift pss hist -> return $ ArbitraryFullPostGiftState pss hist
 
 randomTable :: ([PlayerState], [Table]) -> Gen ([PlayerState], [Table])
 randomTable (_, []) = error "history should be nonempty"

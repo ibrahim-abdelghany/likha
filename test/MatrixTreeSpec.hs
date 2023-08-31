@@ -8,11 +8,11 @@ spec :: Spec
 spec = do
     describe "prune" $ do
         it "prunes matrix dimensions" $
-            prune 2 3 2 infiniteMatrixTree `shouldSatisfy` \mt -> matrixDimensions mt == 2
+            prune 3 2 2 infiniteMatrixTree `shouldSatisfy` \mt -> matrixDimensions mt == 2
         it "prunes tree depth" $
-            prune 2 3 2 infiniteMatrixTree `shouldSatisfy` \mt -> treeDepth mt == 3
+            prune 3 2 2 infiniteMatrixTree `shouldSatisfy` \mt -> treeDepth mt == 3
         it "prunes tree width" $
-            prune 2 3 2 infiniteMatrixTree `shouldSatisfy` \mt -> treeWidth mt == 2
+            prune 3 2 2 infiniteMatrixTree `shouldSatisfy` \mt -> treeWidth mt == 2
     describe "iterateMatrixTree" $ do
         it "generates tree from function" $
             iterateMatrixTree (\n -> Left (replicate n (n-1))) 2 `shouldBe` TreeNode 2 [TreeNode 1 [TreeNode 0 []], TreeNode 1 [TreeNode 0 []]]

@@ -1,3 +1,4 @@
+{-# LANGUAGE TupleSections #-}
 module LikhaGameState (
     PlayerState(..),
     ObservedGameState(..),
@@ -5,8 +6,12 @@ module LikhaGameState (
     Move(..),
     MoveOptions(..),
     playerState,
+    isFinalState,
+    playerScores,
     moveOptions,
     applyMove,
+    observePlayer,
+    observeFullGameState,
     generateRandomFullGameState,
     turn,
     hands,
@@ -24,7 +29,7 @@ import GHC.Float (int2Float)
 import Control.Monad.Extra (iterateMaybeM)
 
 import Cards (Card(..), deck, suit, Suit)
-import LikhaGame ( Player(..), next, Table(..), History, collect, tableScore, nextPlayer, gifts, moves)
+import LikhaGame ( Player(..), next, Table(..), History, players, collect, tableScore, nextPlayer, gifts, moves, players)
 import ListUtils (rotate)
 
 data PlayerState = PlayerState {player :: Player, hand :: [Card], score :: Int}
@@ -47,6 +52,14 @@ hands (FullPostGift pss _) = pss
 playerState :: Player -> FullGameState -> PlayerState
 playerState p fgs = fromJust $ find ((==) p . player) $ hands fgs
 
+isFinalState :: FullGameState -> Bool
+isFinalState (FullPreGift _ _) = False
+isFinalState (FullPostGift pss _) = all (null . hand) pss
+
+playerScores :: FullGameState -> [(Player, Int)]
+playerScores (FullPreGift _ _) = map (,0) players
+playerScores (FullPostGift pss _) = [(player ps, score ps) | ps <- pss]
+
 data Move = Deal Player Card | Gift [(Player, [Card])]
     deriving (Show)
 
@@ -65,7 +78,8 @@ applyMove (Deal _ _) (FullPreGift _ _) = error "FullPreGift only accepts Gift mo
 applyMove (Gift _) (FullPostGift _ _) = error "FullPostGift only accepts Deal moves"
 applyMove (Gift playerGifts) (FullPreGift starting pss) = FullPostGift distributedGifts [Table starting []]
     where distributedGifts = [
-                PlayerState (player ps) ((hand ps \\ giftGiven) ++ giftTaken) 0 | ((giftGiven, giftTaken), ps) <- zip (zip sortedGifts (rotate sortedGifts)) sortedPSs
+                PlayerState (player ps) ((hand ps \\ giftGiven) ++ giftTaken) 0 
+                | ((giftGiven, giftTaken), ps) <- zip (zip sortedGifts (rotate $ rotate $ rotate sortedGifts)) sortedPSs
             ]
           sortedGifts = map snd $ sortOn fst playerGifts
           sortedPSs = sortOn player pss
@@ -90,6 +104,26 @@ applyMove (Deal p card) (FullPostGift pss history)
             | otherwise = 0
 
           collector updatedTable = if isLast then Just $ collect updatedTable else Nothing
+
+observePlayer :: Player -> Player -> Player
+observePlayer observer targetPlayer = toEnum ((fromEnum targetPlayer - fromEnum observer) `mod` 4)
+
+observeFullGameState :: Player -> FullGameState -> FullGameState -> ObservedGameState
+observeFullGameState _ (FullPostGift _ _) _ = error "starting state must be FullPreGift"
+observeFullGameState observer _ (FullPreGift p pss) = 
+        PreGift (hand $ head $ filter ((==) observer . player) pss) (observePlayer observer p)
+observeFullGameState observer (FullPreGift _ initialPSs) (FullPostGift currentPSs history) = 
+        PostGift observerCards giftCards observedHistory
+    where observerCards = playerCards observer currentPSs
+          initialObserverCards = playerCards observer initialPSs
+
+          nextPlayerCards = playerCards (next observer) currentPSs
+
+          giftCards = nextPlayerCards \\ (nextPlayerCards \\ initialObserverCards)
+
+          observedHistory = map (\(Table p cs) -> Table (observePlayer observer p) cs) history
+
+          playerCards p = hand . head . filter ((==) p . player)
 
 generateRandomFullGameState :: ObservedGameState -> RVar FullGameState
 generateRandomFullGameState (PreGift p0cs p) = do
