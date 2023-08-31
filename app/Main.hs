@@ -24,10 +24,10 @@ main = do
             maxTreeWidth = 2,
             maxMatrixDimensions = 1
         }))
-    let twoOptionsTwoTableLookahead = ("twoOptionsOneTableLookahead10Samples" , monteCarloBestMove (MinimaxParams {
+    let fourOptionsOneTableLookahead = ("twoOptionsOneTableLookahead10Samples" , monteCarloBestMove (MinimaxParams {
             monteCarloSamples = 1,
-            maxTreeDepthPreGift = 1+4*2,
-            maxTreeDepthPostGift = 2+4*2,
+            maxTreeDepthPreGift = 1+4,
+            maxTreeDepthPostGift = 2+4,
             maxTreeWidth = 4,
             maxMatrixDimensions = 1
         }))
@@ -37,7 +37,7 @@ main = do
 
     simulateNGames 100 [twoOptionsOneTableLookahead, heuristicAgent, twoOptionsOneTableLookahead, heuristicAgent]
 
-    simulateNGames 100 [twoOptionsTwoTableLookahead, heuristicAgent, twoOptionsTwoTableLookahead, heuristicAgent]
+    simulateNGames 100 [fourOptionsOneTableLookahead, heuristicAgent, fourOptionsOneTableLookahead, heuristicAgent]
 
     return ()
 
