@@ -48,7 +48,7 @@ bestMove parent = playingHand parentGS \\ playingHand bestChild
     where parentGS = fst $ value parent
           parentScore = snd $ value parent
           bestChild = fst $ head $ filter ((==) parentScore . snd) $ map value $ offspring parent
-          playingHand gs = hand $ head $ filter ((==) (turn parentGS) . player) $ hands gs
+          playingHand gs = hand $ head $ filter ((==) Player0 . player) $ hands gs
 
 gameScore :: [(Player, Float)] -> Float
 gameScore playerScores = player0s - player1s

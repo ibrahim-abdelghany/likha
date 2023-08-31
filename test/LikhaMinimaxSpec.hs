@@ -7,13 +7,18 @@ import Test.QuickCheck (Testable(property))
 import Data.Either (isLeft, isRight)
 import Data.List ((\\))
 
-import ArbitraryGameState (ArbitraryFullGameState(..), ArbitraryFullPostGiftState(..), ArbitraryFullPreGiftState (..))
+import ArbitraryGameState (ArbitraryFullGameState(..), ArbitraryFullPostGiftState(..), ArbitraryFullPreGiftState (..), ArbitraryStartFullPostGiftState (ArbitraryStartFullPostGiftState))
 
 import Cards (Card)
-import LikhaGame (Player, players, Table (..), moves)
-import LikhaMinimax (nextStates)
-import LikhaGameState (FullGameState(..), hands, PlayerState (..), turn)
+import LikhaGame (Player (..), players, Table (..), moves)
+import LikhaMinimax (nextStates, MinimaxParams (..), monteCarloBestMove)
+import LikhaGameState (FullGameState(..), hands, PlayerState (..), turn, observeFullGameState, moveOptions, MoveOptions (..))
 import Data.Maybe (fromJust)
+import System.Random (newStdGen)
+import Test.QuickCheck.Monadic (monadicIO)
+import Data.RVar (sampleStateRVar)
+import Control.Monad.State (evalState)
+import Data.Foldable (find)
 
 spec :: Spec
 spec = do
@@ -29,6 +34,25 @@ spec = do
             \(ArbitraryFullPreGiftState p pss) -> nextStates (FullPreGift p pss)
                 `shouldSatisfy` \case Left _ -> False
                                       Right cells -> (all (all (all (all (legalGiftMove (FullPreGift p pss))))) $ take 3 $ map (take 3 . map (take 3 . map (take 3))) cells)
+    describe "monteCarloBestMove" $ do
+        it "gives legal move" $ property $
+            \(ArbitraryStartFullPostGiftState start end) -> monadicIO $ do
+                src <- newStdGen
+                let minimaxParams = MinimaxParams {
+                    monteCarloSamples = 1,
+                    maxTreeDepthPreGift = 1,
+                    maxTreeDepthPostGift = 2,
+                    maxTreeWidth = 1,
+                    maxMatrixDimensions = 1
+                }
+                let _player = turn end
+                let game = observeFullGameState _player start end
+                let move = evalState (sampleStateRVar $ monteCarloBestMove minimaxParams game) src
+                return $ isMoveInOptions _player move (moveOptions end)
+
+isMoveInOptions :: Player -> [Card] -> MoveOptions -> Bool
+isMoveInOptions p move (GiftOptions playerOptions) = move `elem ` snd (fromJust $ find ((==) p . fst) playerOptions)
+isMoveInOptions p move (DealOptions p' options) = p == p' && head move `elem` options
 
 -- checks form not content
 legalGiftMove :: FullGameState -> FullGameState -> Bool
@@ -43,11 +67,11 @@ legalOneCardMove parent child =
         -- one card was dealt
         ((==) 1 . length . snd . head) diffs &&
         -- correct player dealt card
-        ((==) (turn parent) . fst . head) diffs && 
+        ((==) (turn parent) . fst . head) diffs &&
         -- dealt card is pushed to table
-        lastCardInHistory (fromJust $ history child) == head (snd $ head diffs) && 
+        lastCardInHistory (fromJust $ history child) == head (snd $ head diffs) &&
         -- dealt card is a legal nmove for player
-        legalSuitGivenHistory (fromJust $ history parent) (head $ snd $ head diffs) 
+        legalSuitGivenHistory (fromJust $ history parent) (head $ snd $ head diffs)
     where diffs = cardDiffs parent child
 
           history (FullPostGift _ hist) = Just hist

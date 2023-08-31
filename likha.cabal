@@ -26,6 +26,7 @@ source-repository head
 library
   exposed-modules:
       Cards
+      LikhaAgent
       LikhaGame
       LikhaGameHeuristics
       LikhaGameState
@@ -72,6 +73,7 @@ test-suite likha-test
   main-is: Spec.hs
   other-modules:
       ArbitraryGameState
+      LikhaAgentSpec
       LikhaGameHeuristicsSpec
       LikhaGameSpec
       LikhaGameStateSpec
