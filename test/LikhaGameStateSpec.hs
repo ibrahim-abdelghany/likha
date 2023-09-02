@@ -18,7 +18,6 @@ import LikhaGameState
       Move(..),
       applyMove,
       observeFullGameState,
-      hands,
       observePlayer )
 import LikhaGame (Player (..), players, Table (..))
 

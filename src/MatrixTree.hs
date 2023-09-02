@@ -8,11 +8,9 @@ module MatrixTree
   mapMatrix,
   prune,
   Turn(..),
-  minimax
+  minimax,
+  alphaBetaMinimax
 ) where
-
-import Data.Foldable (maximumBy, minimumBy)
-import Data.Ord (comparing)
 
 data MatrixTree a = TreeNode a [MatrixTree a] | MatrixNode a [[[[MatrixTree a]]]]
     deriving (Show, Eq)
@@ -59,22 +57,58 @@ data Turn = Min | Max
     deriving (Show, Eq)
 
 minimax ::  Ord b => (a -> Turn) -> (a -> b) -> MatrixTree a -> MatrixTree (a, b)
-minimax turn heuristic (MatrixNode x cells) = 
-        MatrixNode (x, if null cells then heuristic x else minimaxMatrix $ mapMatrix value minimaxCells) minimaxCells
+minimax turn heuristic (MatrixNode x cells) =
+        MatrixNode (x, if null cells then heuristic x else minimaxMatrix $ mapMatrix (snd . value) minimaxCells) minimaxCells
     where minimaxCells = mapMatrix (minimax turn heuristic) cells
-minimax turn heuristic (TreeNode x children) = 
-    case turn x of
-        Min -> TreeNode (x, if null children then heuristic x else minimum $ map (snd . value) minimaxChildren) minimaxChildren
-        Max -> TreeNode (x, if null children then heuristic x else maximum $ map (snd . value) minimaxChildren) minimaxChildren
+minimax turn heuristic (TreeNode x children) =
+        TreeNode (x, if null children then heuristic x else minOrMax $ map (snd . value) minimaxChildren) minimaxChildren
     where minimaxChildren = map (minimax turn heuristic) children
+          minOrMax = case turn x of
+            Min -> minimum
+            Max -> maximum
 
-minimaxMatrix :: Ord b => [[[[(a, b)]]]] ->  b
-minimaxMatrix matrix = snd $ minState $ map (maxState . map (minState . map maxState)) matrix
-    where compareScore ::  Ord b => (a, b) -> (a, b) -> Ordering
-          compareScore = comparing snd
+minimaxMatrix :: Ord b => [[[[b]]]] ->  b
+minimaxMatrix matrix = minimum $ map (maximum . map (minimum . map maximum)) matrix
 
-          maxState :: Ord b => [(a, b)] -> (a, b)
-          maxState = maximumBy compareScore
+alphaBetaMinimax :: Ord b => (a -> Turn) -> (a -> b) -> MatrixTree a -> MatrixTree (a, b)
+alphaBetaMinimax turn heuristic (MatrixNode x cells) =
+        MatrixNode (x, if null cells then heuristic x else minimaxMatrix $ mapMatrix (snd . value) minimaxCells) minimaxCells
+    where minimaxCells = mapMatrix (alphaBetaMinimax turn heuristic) cells
+alphaBetaMinimax turn heuristic (TreeNode x children)
+        | turn x == Min && all ((==) Max . turn . value) children = minimizeMaximize (TreeNode x children)
+        | turn x == Max && all ((==) Min . turn . value) children = maximizeMinimize (TreeNode x children)
+        | otherwise = TreeNode (x, if null children then heuristic x else minOrMax $ map (snd . value) minimaxChildren) minimaxChildren
+    where minimaxChildren = map (alphaBetaMinimax turn heuristic) children
+          minOrMax = case turn x of
+            Min -> minimum
+            Max -> maximum
 
-          minState :: Ord b => [(a, b)] -> (a, b)
-          minState = minimumBy compareScore
+          minimizeMaximize (MatrixNode _ _) = error "unexpected input"
+          minimizeMaximize (TreeNode x_ []) = TreeNode (x_, heuristic x_) []
+          minimizeMaximize (TreeNode x_ (c:cs)) = TreeNode (x_, minimum $ map (snd . value) maximizedChildren) maximizedChildren
+            where maximizedChildren = pruneLargerMax (alphaBetaMinimax turn heuristic c) (map (alphaBetaMinimax turn heuristic) cs)
+
+                  pruneLargerMax :: Ord b => MatrixTree (a, b) -> [MatrixTree (a, b)] -> [MatrixTree (a, b)]
+                  pruneLargerMax first rest = first : omitLargeMax (snd $ value first) rest
+
+                  omitLargeMax :: Ord b => b -> [MatrixTree (a, b)] -> [MatrixTree (a, b)]
+                  omitLargeMax _ [] = []
+                  omitLargeMax _ ((MatrixNode {}):_) = error "fail"
+                  omitLargeMax smallestMax ((TreeNode (cx,cv) ccs):rest)
+                    | all ((<= smallestMax) . snd . value) ccs = TreeNode (cx,cv) ccs: omitLargeMax cv rest
+                    | otherwise = omitLargeMax smallestMax rest
+
+          maximizeMinimize (MatrixNode _ _) = error "unexpected input"
+          maximizeMinimize (TreeNode x_ []) = TreeNode (x_, heuristic x_) []
+          maximizeMinimize (TreeNode x_ (c:cs)) = TreeNode (x_, maximum $ map (snd . value) minimizedChildren) minimizedChildren
+            where minimizedChildren = pruneSmallerMin (alphaBetaMinimax turn heuristic c) (map (alphaBetaMinimax turn heuristic) cs)
+
+                  pruneSmallerMin :: Ord b => MatrixTree (a, b) -> [MatrixTree (a, b)] -> [MatrixTree (a, b)]
+                  pruneSmallerMin first rest = first : omitSmallerMin (snd $ value first) rest
+
+                  omitSmallerMin :: Ord b => b -> [MatrixTree (a, b)] -> [MatrixTree (a, b)]
+                  omitSmallerMin _ [] = []
+                  omitSmallerMin _ ((MatrixNode {}):_) = error "fail"
+                  omitSmallerMin largestMin ((TreeNode (cx,cv) ccs):rest)
+                    | all ((>= largestMin) . snd . value) ccs = TreeNode (cx,cv) ccs: omitSmallerMin cv rest
+                    | otherwise = omitSmallerMin largestMin rest

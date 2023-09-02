@@ -1,7 +1,7 @@
 module Main (main) where
 
 import LikhaAgent (runLikhaGame, randomLikhaAgent, LikhaAgent)
-import LikhaMinimax (MinimaxParams(..), monteCarloBestMove)
+import LikhaMinimax (MinimaxParams(..), monteCarloBestMove, MinimaxAlgorithm(..))
 
 import System.Random( newStdGen, StdGen )
 import Data.RVar (sampleStateRVar)
@@ -11,33 +11,36 @@ import LikhaGame (Player (..))
 main :: IO ()
 main = do
     let heuristicAgent = ("heuristic" , monteCarloBestMove (MinimaxParams {
+            algorithm = AlphaBeta,
             monteCarloSamples = 1,
             maxTreeDepthPreGift = 1,
             maxTreeDepthPostGift = 2,
             maxTreeWidth = 1,
             maxMatrixDimensions = 1
         }))
-    let twoOptionsOneTableLookahead = ("twoOptionsOneTableLookahead" , monteCarloBestMove (MinimaxParams {
+    let smartAgent = ("two options one table lookahead" , monteCarloBestMove (MinimaxParams {
+            algorithm = AlphaBeta,
             monteCarloSamples = 1,
             maxTreeDepthPreGift = 1+4,
             maxTreeDepthPostGift = 2+4,
             maxTreeWidth = 2,
             maxMatrixDimensions = 1
         }))
-    let fourOptionsOneTableLookahead = ("twoOptionsOneTableLookahead10Samples" , monteCarloBestMove (MinimaxParams {
-            monteCarloSamples = 1,
+    let geniusAgent = ("five options one table lookahead 5 samples" , monteCarloBestMove (MinimaxParams {
+            algorithm = AlphaBeta,
+            monteCarloSamples = 5,
             maxTreeDepthPreGift = 1+4,
             maxTreeDepthPostGift = 2+4,
-            maxTreeWidth = 4,
+            maxTreeWidth = 5,
             maxMatrixDimensions = 1
         }))
     let randomAgent = ("random", randomLikhaAgent)
 
     simulateNGames 100 [heuristicAgent, randomAgent, heuristicAgent, randomAgent]
 
-    simulateNGames 100 [twoOptionsOneTableLookahead, heuristicAgent, twoOptionsOneTableLookahead, heuristicAgent]
+    simulateNGames 100 [smartAgent, heuristicAgent, smartAgent, heuristicAgent]
 
-    simulateNGames 100 [fourOptionsOneTableLookahead, heuristicAgent, fourOptionsOneTableLookahead, heuristicAgent]
+    simulateNGames 100 [geniusAgent, smartAgent, geniusAgent, smartAgent]
 
     return ()
 

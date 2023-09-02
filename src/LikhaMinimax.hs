@@ -1,5 +1,6 @@
 module LikhaMinimax
 (
+  MinimaxAlgorithm(..),
   MinimaxParams(..),
   monteCarloBestMove,
   nextStates
@@ -16,9 +17,13 @@ import LikhaGame (Player (..))
 import LikhaGameState (PlayerState(..), ObservedGameState, FullGameState (..), generateRandomFullGameState, turn, hands, MoveOptions (..), moveOptions, playerState, applyMove, Move (Deal, Gift))
 import LikhaGameHeuristics (giftHeuristic, gameStateHeuristic)
 
-import MatrixTree (MatrixTree(..), value, offspring, Turn (..), iterateMatrixTree, prune, minimax)
+import MatrixTree (MatrixTree(..), value, offspring, Turn (..), iterateMatrixTree, prune, minimax, alphaBetaMinimax)
+
+data MinimaxAlgorithm = Minimax | AlphaBeta
+    deriving (Show, Eq)
 
 data MinimaxParams = MinimaxParams {
+      algorithm :: MinimaxAlgorithm,
       monteCarloSamples :: Int,
       maxTreeDepthPreGift :: Int,
       maxTreeDepthPostGift :: Int,
@@ -36,7 +41,7 @@ monteCarloBestMove params observedGameState = do
 minimaxBestMove :: MinimaxParams -> FullGameState -> [Card]
 minimaxBestMove params initialState =
         bestMove $
-        minimax (playerGoal . turn) gameStateHeuristic $
+        (if algorithm params == AlphaBeta then alphaBetaMinimax else minimax) (playerGoal . turn) (gameScore . gameStateHeuristic) $
         prune maxDepth (maxTreeWidth params) (maxMatrixDimensions params) $
         iterateMatrixTree nextStates initialState
     where maxDepth = case initialState of

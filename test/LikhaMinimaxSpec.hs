@@ -11,7 +11,7 @@ import ArbitraryGameState (ArbitraryFullGameState(..), ArbitraryFullPostGiftStat
 
 import Cards (Card)
 import LikhaGame (Player (..), players, Table (..), moves)
-import LikhaMinimax (nextStates, MinimaxParams (..), monteCarloBestMove)
+import LikhaMinimax (nextStates, MinimaxParams (..), monteCarloBestMove, MinimaxAlgorithm (..))
 import LikhaGameState (FullGameState(..), hands, PlayerState (..), turn, observeFullGameState, moveOptions, MoveOptions (..))
 import Data.Maybe (fromJust)
 import System.Random (newStdGen)
@@ -39,6 +39,7 @@ spec = do
             \(ArbitraryStartFullPostGiftState start end) -> monadicIO $ do
                 src <- newStdGen
                 let minimaxParams = MinimaxParams {
+                    algorithm = Minimax,
                     monteCarloSamples = 1,
                     maxTreeDepthPreGift = 1,
                     maxTreeDepthPostGift = 2,
@@ -49,6 +50,30 @@ spec = do
                 let game = observeFullGameState _player start end
                 let move = evalState (sampleStateRVar $ monteCarloBestMove minimaxParams game) src
                 return $ isMoveInOptions _player move (moveOptions end)
+        it "alpha beta and minimax have the same output" $ property $
+            \(ArbitraryStartFullPostGiftState start end) -> monadicIO $ do
+                src <- newStdGen
+                let minimaxParams = MinimaxParams {
+                    algorithm = Minimax,
+                    monteCarloSamples = 1,
+                    maxTreeDepthPreGift = 1+4,
+                    maxTreeDepthPostGift = 2+4,
+                    maxTreeWidth = 3,
+                    maxMatrixDimensions = 1
+                }
+                let alphaBetaParams = MinimaxParams {
+                    algorithm = AlphaBeta,
+                    monteCarloSamples = 1,
+                    maxTreeDepthPreGift = 1+4,
+                    maxTreeDepthPostGift = 2+4,
+                    maxTreeWidth = 3,
+                    maxMatrixDimensions = 1
+                }
+                let _player = turn end
+                let game = observeFullGameState _player start end
+                let moveMinimax = evalState (sampleStateRVar $ monteCarloBestMove minimaxParams game) src
+                let moveAlphaBeta = evalState (sampleStateRVar $ monteCarloBestMove alphaBetaParams game) src
+                return $ moveMinimax == moveAlphaBeta
 
 isMoveInOptions :: Player -> [Card] -> MoveOptions -> Bool
 isMoveInOptions p move (GiftOptions playerOptions) = move `elem ` snd (fromJust $ find ((==) p . fst) playerOptions)
