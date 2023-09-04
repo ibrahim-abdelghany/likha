@@ -44,6 +44,7 @@ library
     , hspec
     , monad-extras
     , mtl
+    , parallel
     , random
     , random-fu
     , rvar
@@ -63,6 +64,7 @@ executable likha-exe
     , likha
     , monad-extras
     , mtl
+    , parallel
     , random
     , random-fu
     , rvar
@@ -91,6 +93,7 @@ test-suite likha-test
     , likha
     , monad-extras
     , mtl
+    , parallel
     , random
     , random-fu
     , rvar

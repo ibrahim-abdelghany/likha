@@ -18,6 +18,7 @@ import LikhaGameState (PlayerState(..), ObservedGameState, FullGameState (..), g
 import LikhaGameHeuristics (giftHeuristic, gameStateHeuristic)
 
 import MatrixTree (MatrixTree(..), value, offspring, Turn (..), iterateMatrixTree, prune, minimax, alphaBetaMinimax)
+import Control.Parallel.Strategies (rdeepseq, parMap)
 
 data MinimaxAlgorithm = Minimax | AlphaBeta
     deriving (Show, Eq)
@@ -32,10 +33,11 @@ data MinimaxParams = MinimaxParams {
   }
   deriving (Show, Eq)
 
-monteCarloBestMove :: MinimaxParams -> ObservedGameState -> RVar [Card]
-monteCarloBestMove params observedGameState = do
+monteCarloBestMove :: (ObservedGameState -> MinimaxParams) -> ObservedGameState -> RVar [Card]
+monteCarloBestMove paramsFun observedGameState = do
+    let params = paramsFun observedGameState
     sampledGameStates <- replicateM (monteCarloSamples params) $ generateRandomFullGameState observedGameState
-    let bestMoves = map (minimaxBestMove params) sampledGameStates
+    let bestMoves =  parMap rdeepseq (minimaxBestMove params) sampledGameStates
     return $ head $ maximumBy (comparing length) $ group $ sort bestMoves
 
 minimaxBestMove :: MinimaxParams -> FullGameState -> [Card]

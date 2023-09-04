@@ -7,10 +7,11 @@ import System.Random( newStdGen, StdGen )
 import Data.RVar (sampleStateRVar)
 import Control.Monad.State (State, evalState, replicateM)
 import LikhaGame (Player (..))
+import LikhaGameState (freeCards)
 
 main :: IO ()
 main = do
-    let heuristicAgent = ("heuristic" , monteCarloBestMove (MinimaxParams {
+    let heuristicAgent = ("heuristic" , monteCarloBestMove (const $ MinimaxParams {
             algorithm = AlphaBeta,
             monteCarloSamples = 1,
             maxTreeDepthPreGift = 1,
@@ -18,7 +19,7 @@ main = do
             maxTreeWidth = 1,
             maxMatrixDimensions = 1
         }))
-    let smartAgent = ("two options one table lookahead" , monteCarloBestMove (MinimaxParams {
+    let smartAgent = ("smart" , monteCarloBestMove (const $ MinimaxParams {
             algorithm = AlphaBeta,
             monteCarloSamples = 1,
             maxTreeDepthPreGift = 1+4,
@@ -26,11 +27,11 @@ main = do
             maxTreeWidth = 2,
             maxMatrixDimensions = 1
         }))
-    let geniusAgent = ("five options one table lookahead 5 samples" , monteCarloBestMove (MinimaxParams {
+    let geniusAgent = ("genius" , monteCarloBestMove (\ogs -> MinimaxParams {
             algorithm = AlphaBeta,
-            monteCarloSamples = 5,
-            maxTreeDepthPreGift = 1+4,
-            maxTreeDepthPostGift = 2+4,
+            monteCarloSamples = max (length $ freeCards ogs) 1,
+            maxTreeDepthPreGift = 1,
+            maxTreeDepthPostGift = 8,
             maxTreeWidth = 5,
             maxMatrixDimensions = 1
         }))
@@ -48,11 +49,12 @@ simulateNGames :: Int -> [(String, LikhaAgent)] -> IO ()
 simulateNGames n agents = do
     putStrLn $ "Simulating " ++ show n ++ " instances of likha with players: " ++ show (map fst agents)
 
-    let results = fmap (length . filter (Player0 ==) . map winner) (replicateM 100 $ simulateGame (map snd agents))
-
     src <- newStdGen
+    let results = evalState (replicateM 100 $ simulateGame (map snd agents)) src
 
-    putStrLn (show ((evalState results src * 100) `div`  n ) ++ "% won")
+    let wins = length $ filter (Player0 ==) $ map winner results
+
+    putStrLn (show ((wins * 100) `div` n) ++ "% won")
 
     return ()
 

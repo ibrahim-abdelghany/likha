@@ -2,6 +2,8 @@
 module LikhaGameState (
     PlayerState(..),
     ObservedGameState(..),
+    usedCards,
+    freeCards,
     FullGameState(..),
     Move(..),
     MoveOptions(..),
@@ -37,6 +39,13 @@ data PlayerState = PlayerState {player :: Player, hand :: [Card], score :: Int}
 
 data ObservedGameState = PreGift [Card] Player | PostGift [Card] [Card] History
     deriving Show
+
+usedCards :: ObservedGameState -> [Card]
+usedCards (PreGift p0cs _) = p0cs
+usedCards (PostGift p0cs p1cs history) = p0cs ++ p1cs ++ concatMap cards history
+
+freeCards :: ObservedGameState -> [Card]
+freeCards ogs = deck \\ usedCards ogs
 
 data FullGameState = FullPreGift Player [PlayerState] | FullPostGift [PlayerState] History
     deriving Show

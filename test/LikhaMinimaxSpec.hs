@@ -38,7 +38,7 @@ spec = do
         it "gives legal move" $ property $
             \(ArbitraryStartFullPostGiftState start end) -> monadicIO $ do
                 src <- newStdGen
-                let minimaxParams = MinimaxParams {
+                let minimaxParams = const $ MinimaxParams {
                     algorithm = Minimax,
                     monteCarloSamples = 1,
                     maxTreeDepthPreGift = 1,
@@ -53,7 +53,7 @@ spec = do
         it "alpha beta and minimax have the same output" $ property $
             \(ArbitraryStartFullPostGiftState start end) -> monadicIO $ do
                 src <- newStdGen
-                let minimaxParams = MinimaxParams {
+                let minimaxParams = const $ MinimaxParams {
                     algorithm = Minimax,
                     monteCarloSamples = 1,
                     maxTreeDepthPreGift = 1+4,
@@ -61,7 +61,7 @@ spec = do
                     maxTreeWidth = 3,
                     maxMatrixDimensions = 1
                 }
-                let alphaBetaParams = MinimaxParams {
+                let alphaBetaParams = const $ MinimaxParams {
                     algorithm = AlphaBeta,
                     monteCarloSamples = 1,
                     maxTreeDepthPreGift = 1+4,

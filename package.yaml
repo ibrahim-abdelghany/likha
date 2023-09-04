@@ -28,6 +28,7 @@ dependencies:
 - rvar
 - mtl
 - monad-extras
+- parallel
 
 ghc-options:
 - -Wall
