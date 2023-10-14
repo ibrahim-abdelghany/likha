@@ -29,6 +29,7 @@ import Control.Monad.State (evalState)
 import Test.QuickCheck.Gen (Gen)
 import Data.List (sortOn)
 import ListUtils (rotate)
+import LikhaGameState (missingLikhas)
 
 spec :: Spec
 spec = do
@@ -64,7 +65,27 @@ spec = do
         it "returns player's missing suits from history" $
             missingSuits Player0 [Table Player1 [Card Clubs Ace, Card Clubs Two, Card Clubs Three, Card Hearts Seven]]
                 `shouldBe` [Clubs]
-
+    
+    describe "missingLikhas" $ do
+        it "returns nothing on empty history" $
+            missingLikhas Player0 []
+                `shouldBe` []
+        it "returns nothing on empty cards in Table in history" $
+            missingLikhas Player0 [Table Player1 []]
+                `shouldBe` []
+        it "returns player's missing Queen likha from history" $
+            missingLikhas Player0 [Table Player1 [Card Spades Ace, Card Spades Two, Card Spades Three, Card Spades Seven]]
+                `shouldBe` [Card Spades Queen]
+        it "returns player's missing Diamonds likha from history" $
+            missingLikhas Player0 [Table Player1 [Card Diamonds Ace, Card Diamonds Two, Card Diamonds Three, Card Diamonds Seven]]
+                `shouldBe` [Card Diamonds Ten]
+        it "returns player's missing likhas for missing suit from history" $
+            missingLikhas Player0 [Table Player1 [Card Hearts Ace, Card Hearts Two, Card Hearts Three, Card Diamonds Seven]]
+                `shouldBe` [Card Spades Queen, Card Diamonds Ten]
+        it "returns player's no missing likhas for existing suit from history" $
+            missingLikhas Player0 [Table Player1 [Card Hearts Ace, Card Hearts Two, Card Hearts Three, Card Hearts Seven]]
+                `shouldBe` []
+    
     describe "generateRandomFullGameState" $ do
         it "samples pregift game state for observed hand" $ property $
             \(ArbitraryObservedPreGiftState starting p0cs) -> monadicIO $ do

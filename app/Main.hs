@@ -8,6 +8,9 @@ import Data.RVar (sampleStateRVar)
 import Control.Monad.State (State, evalState, replicateM)
 import LikhaGame (Player (..))
 import LikhaGameState (freeCards)
+import GHC.Float (int2Float, powerFloat)
+
+import System.IO(hFlush, stdout)
 
 main :: IO ()
 main = do
@@ -22,8 +25,8 @@ main = do
     let smartAgent = ("smart" , monteCarloBestMove (const $ MinimaxParams {
             algorithm = AlphaBeta,
             monteCarloSamples = 1,
-            maxTreeDepthPreGift = 1+4,
-            maxTreeDepthPostGift = 2+4,
+            maxTreeDepthPreGift = 1,
+            maxTreeDepthPostGift = 6,
             maxTreeWidth = 2,
             maxMatrixDimensions = 1
         }))
@@ -50,13 +53,32 @@ simulateNGames n agents = do
     putStrLn $ "Simulating " ++ show n ++ " instances of likha with players: " ++ show (map fst agents)
 
     src <- newStdGen
-    let results = evalState (replicateM 100 $ simulateGame (map snd agents)) src
+    let results = evalState (replicateM n $ simulateGame (map snd agents)) src
+
+    progressBar n results
+
+    putStr "Average scores: "
+    let average xss = map (/int2Float (length xss)) $ foldl (zipWith (+)) [0,0,0,0] xss
+    let averageScores = average (map (map int2Float) results)
+    print averageScores
+
+    putStr "Std deviation: "
+    print $ map sqrt $ average $ map (map (powerFloat 2) . zipWith (-) averageScores . map int2Float) results
 
     let wins = length $ filter (Player0 ==) $ map winner results
 
     putStrLn (show ((wins * 100) `div` n) ++ "% won")
 
     return ()
+
+progressBar :: Int -> [a] -> IO ()
+progressBar _ xs = do
+    let progress = do
+            putStr "."
+            hFlush stdout
+
+    mapM_ (`seq` progress) xs
+    putStrLn ""
 
 winner :: [Int] -> Player
 winner scores = if max0 < max1 then Player0 else Player1

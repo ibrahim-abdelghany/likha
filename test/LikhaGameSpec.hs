@@ -72,4 +72,21 @@ spec = do
                 Card Spades Seven, 
                 Card Clubs Jack
             ]
+        it "returns valid likha cards if said likha can be won by others" $
+            moves [Table Player0 [Card Diamonds Ace]] [
+                Card Diamonds Ten, 
+                Card Diamonds Two, 
+                Card Spades Queen
+            ] `shouldBe` [
+                Card Diamonds Ten
+            ]
+        it "returns all likha cards if all likhas can be won by others" $
+            moves [Table Player0 [Card Hearts Two]] [
+                Card Diamonds Ten, 
+                Card Diamonds Two, 
+                Card Spades Queen
+            ] `shouldBe` [
+                Card Diamonds Ten,
+                Card Spades Queen
+            ]
         

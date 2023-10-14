@@ -17,7 +17,8 @@ module LikhaGameState (
     generateRandomFullGameState,
     turn,
     hands,
-    missingSuits
+    missingSuits,
+    missingLikhas
 ) where
 
 import Data.Random ( RVar, randomElement )
@@ -30,8 +31,8 @@ import Data.Ord (comparing)
 import GHC.Float (int2Float)
 import Control.Monad.Extra (iterateMaybeM)
 
-import Cards (Card(..), deck, suit, Suit)
-import LikhaGame ( Player(..), next, Table(..), History, players, collect, tableScore, nextPlayer, gifts, moves, players)
+import Cards (Card(..), deck, suit, Suit (..))
+import LikhaGame ( Player(..), next, Table(..), History, players, collect, tableScore, nextPlayer, gifts, moves, players, pushToTable, likhas)
 import ListUtils (rotate)
 
 data PlayerState = PlayerState {player :: Player, hand :: [Card], score :: Int}
@@ -79,15 +80,15 @@ moveOptions :: FullGameState -> MoveOptions
 moveOptions (FullPreGift _ pss) = GiftOptions [(player ps, gifts $ hand ps) | ps <- pss]
 moveOptions (FullPostGift pss history) = DealOptions p choices
     where p = turn (FullPostGift pss history)
+          playerCards = hand $ head $ filter ((==) p . player) pss
           choices = moves history playerCards
-            where playerCards = hand $ head $ filter ((==) p . player) pss
 
 applyMove :: Move -> FullGameState -> FullGameState
 applyMove (Deal _ _) (FullPreGift _ _) = error "FullPreGift only accepts Gift moves"
 applyMove (Gift _) (FullPostGift _ _) = error "FullPostGift only accepts Deal moves"
 applyMove (Gift playerGifts) (FullPreGift starting pss) = FullPostGift distributedGifts [Table starting []]
     where distributedGifts = [
-                PlayerState (player ps) ((hand ps \\ giftGiven) ++ giftTaken) 0 
+                PlayerState (player ps) ((hand ps \\ giftGiven) ++ giftTaken) 0
                 | ((giftGiven, giftTaken), ps) <- zip (zip sortedGifts (rotate $ rotate $ rotate sortedGifts)) sortedPSs
             ]
           sortedGifts = map snd $ sortOn fst playerGifts
@@ -119,9 +120,9 @@ observePlayer observer targetPlayer = toEnum ((fromEnum targetPlayer - fromEnum 
 
 observeFullGameState :: Player -> FullGameState -> FullGameState -> ObservedGameState
 observeFullGameState _ (FullPostGift _ _) _ = error "starting state must be FullPreGift"
-observeFullGameState observer _ (FullPreGift p pss) = 
+observeFullGameState observer _ (FullPreGift p pss) =
         PreGift (hand $ head $ filter ((==) observer . player) pss) (observePlayer observer p)
-observeFullGameState observer (FullPreGift _ initialPSs) (FullPostGift currentPSs history) = 
+observeFullGameState observer (FullPreGift _ initialPSs) (FullPostGift currentPSs history) =
         PostGift observerCards giftCards observedHistory
     where observerCards = playerCards observer currentPSs
           initialObserverCards = playerCards observer initialPSs
@@ -167,7 +168,7 @@ generateRandomFullGameState (PostGift p0cs p1cs history) = fmap fromJust $ repea
   where playerScore p = sum $ map (\table -> if collect table == p then tableScore table else 0) history
 
         playerDomain :: Player -> [Card] -> [Card]
-        playerDomain p = filter (\c -> suit c `notElem` missingSuits p history)
+        playerDomain p = filter (\c -> suit c `notElem` missingSuits p history && c `notElem` missingLikhas p history)
 
         nPlayer1Cards = remainingCardsPerPlayer + extraCard Player1 - length p1csLeft
         nPlayer2Cards = remainingCardsPerPlayer + extraCard Player2
@@ -192,11 +193,10 @@ repeatUntil test generator = do
     if test x then return x else repeatUntil test generator
 
 distributeFreeCards :: [(Player, Int, [Card])] -> RVar (Maybe [(Player, [Card])])
-distributeFreeCards domains = do
+distributeFreeCards domains
     -- if final game state return empty hands
-    if all (\(_, hnum, _) -> hnum == 0) domains
-    then return $ Just [(p,[]) | (p,_,_) <- domains]
-    else do
+    | all (\(_, hnum, _) -> hnum == 0) domains = return $ Just [(p,[]) | (p,_,_) <- domains]
+    | otherwise = do
         let initialDomains = map (\(p, hnum, dom) -> (p, hnum, [], dom)) domains
         finalDomains <- iterateMaybeM pickCardForMostConstrainedPlayer initialDomains
         let fullDomains = all (\(_, n, h, _) -> length h == n)
@@ -212,6 +212,31 @@ pickCardForMostConstrainedPlayer domains = do
         let otherPlayerDomains = filter (\(p', _, _, _) -> p' /= p) domains
         let otherPlayersUpdatedDomains = map (\(p', hnum', phnd', dom') -> (p', hnum', phnd', dom' \\ [card])) otherPlayerDomains
         return $ Just $ (p, hnum, card:phand, dom \\ [card]) : otherPlayersUpdatedDomains
+
+missingLikhas :: Player -> History -> [Card]
+missingLikhas p = concatMap (missingLikhaFromTable p)
+
+missingLikhaFromTable :: Player -> Table -> [Card]
+missingLikhaFromTable p (Table start cs)
+    | null playerCard = []
+    | not (null likhasCanBeCollectedByOthers) && not likhaPlayed = likhasCanBeCollectedByOthers
+    | otherwise = []
+    where playersCards = zip (iterate next start) cs
+          tableSuit = suit $ head cs
+
+          cardsBeforePlayer = map snd $ takeWhile ((/= p) . fst) playersCards
+
+          playerCard = map snd $ filter ((== p) . fst) playersCards
+          playerSuit = suit $ head playerCard
+
+          likhasCanBeCollectedByOthers = filter (
+            \likha -> collect (pushToTable likha (Table start cardsBeforePlayer)) /= p && likhaPlayable likha
+           ) likhas
+          
+          likhaPlayable likha = tableSuit /= playerSuit || suit likha == tableSuit
+            
+          likhaPlayed = head playerCard `elem` likhasCanBeCollectedByOthers
+
 
 missingSuits :: Player -> History -> [Suit]
 missingSuits p = mapMaybe (missingFromTable p)

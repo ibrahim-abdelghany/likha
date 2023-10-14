@@ -9,9 +9,11 @@ module LikhaGame
     History,
     nextPlayer,
     collect,
+    pushToTable,
     tableScore,
     moves,
-    gifts
+    gifts,
+    likhas
 ) where
 
 import Cards (Card(..), Suit (..), Number (..), suit, number)
@@ -47,6 +49,9 @@ collect (Table start cs) = fst
                             $ zip (iterate next start) cs
     where tableSuit = suit $ head cs
 
+pushToTable :: Card -> Table -> Table
+pushToTable card (Table start cs) = Table start (cs ++ [card])
+
 tableScore :: Table -> Int
 tableScore = sum . map \case
                     Card Hearts _ -> 1
@@ -56,8 +61,16 @@ tableScore = sum . map \case
                  . cards
 
 moves :: History -> [Card] -> [Card]
-moves history cs = if null $ cards $ head history then cs else legalMovesForSuit (suit $ head $ cards $ head history) cs
- 
+moves history cs
+  | null $ cards $ head history = cs
+  | not $ null likhasCollectedByOthers = likhasCollectedByOthers
+  | otherwise = legalForSuit
+  where
+      currentPlayer = nextPlayer $ head history
+      legalForSuit = legalMovesForSuit (suit $ head $ cards $ head history) cs
+      likhasForSuit = filter (`elem` likhas) legalForSuit
+      likhasCollectedByOthers = filter (\likha -> collect (pushToTable likha (head history)) /= currentPlayer) likhasForSuit
+
 legalMovesForSuit :: Suit -> [Card] -> [Card]
 legalMovesForSuit s cs
     | not $ null cardsInSuit = cardsInSuit
@@ -67,3 +80,6 @@ legalMovesForSuit s cs
 
 gifts :: [Card] -> [[Card]]
 gifts = pick 3
+
+likhas :: [Card]
+likhas = [Card Spades Queen, Card Diamonds Ten]
